@@ -3032,10 +3032,20 @@
     let isSyncInProgress = false;
     let autoSyncPushTimeout = null;
 
+    function getActiveSyncTopic() {
+      const custom = getSyncKey();
+      if (custom && custom.trim().length > 0) {
+        return "pharma_live_" + custom.trim().toLowerCase().replace(/[^a-z0-9_-]/g, "_");
+      }
+      const store = getStoreName().toLowerCase().replace(/[^a-z0-9_-]/g, "_");
+      return "pharma_live_" + (store || "lucknow_medicos_786");
+    }
+
     function getFullDatabaseSnapshot() {
       return {
         storeName: getStoreName(),
         ownerPin: getOwnerMasterPin(),
+        syncKey: getSyncKey() || getActiveSyncTopic(),
         employees: employees,
         sales: salesData,
         medicines: medicinesData,
@@ -3058,6 +3068,9 @@
         if (typeof data.ownerPin === "string") {
           setOwnerMasterPinInternal(data.ownerPin.trim());
         }
+        if (data.syncKey && typeof data.syncKey === "string") {
+          setSyncKey(data.syncKey);
+        }
         if (Array.isArray(data.employees)) {
           employees = data.employees;
           saveEmployeesInternal();
@@ -3076,16 +3089,7 @@
           setLastSyncTime(Date.now());
         }
 
-        renderTable();
-        renderMonitorGrid();
-        renderDutyOverview();
-        updateCounters();
-        renderSales();
-        renderMedicines();
-        populateEmployeeDropdowns();
-        if (currentSession.role === "employee" && currentSession.empId) {
-          renderEmployeePortal();
-        }
+        updatePortalUI();
         updateSyncStatusUI();
         return true;
       } catch(err) {
@@ -3116,82 +3120,125 @@
       }, 1000);
     }
 
+    let liveEventSource = null;
+
+    function initRealtimeListener() {
+      if (liveEventSource) {
+        try { liveEventSource.close(); } catch(e) {}
+        liveEventSource = null;
+      }
+      const topic = getActiveSyncTopic();
+      try {
+        liveEventSource = new EventSource(`https://ntfy.sh/${topic}/sse`);
+        liveEventSource.onopen = () => {
+          cloudSyncNavDot.className = "w-2 h-2 rounded-full bg-emerald-400 animate-pulse";
+          cloudSyncNavText.textContent = "Live: Real-Time Active";
+          modalSyncIndicator.className = "w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse";
+          modalSyncStatusLabel.textContent = "Real-Time Live Sync Active";
+        };
+        liveEventSource.onmessage = async (event) => {
+          try {
+            const msg = JSON.parse(event.data);
+            if (msg.event === "message" && msg.message) {
+              let parsed = null;
+              if (msg.attachment && msg.attachment.url) {
+                const res = await fetch(msg.attachment.url);
+                parsed = await res.json();
+              } else {
+                parsed = JSON.parse(msg.message);
+              }
+              if (parsed && parsed.updatedAt && parsed.deviceId !== getDeviceId()) {
+                applyFullDatabaseSnapshot(parsed, "Realtime SSE");
+                showToast("Live update received: Staff / Duty updated!");
+              }
+            }
+          } catch(err) {
+            console.warn("Realtime parse warning:", err);
+          }
+        };
+        liveEventSource.onerror = () => {
+          // EventSource auto-reconnects
+        };
+      } catch(e) {
+        console.warn("EventSource not initialized:", e);
+      }
+    }
+
     async function pushToCloud(silent = false) {
       if (isSyncInProgress) return;
-      let blobId = getSyncBlobId();
-      let syncKey = getSyncKey();
-      if (!blobId && !syncKey) return;
-
       isSyncInProgress = true;
       setSyncSpinning(true);
       const snapshot = getFullDatabaseSnapshot();
+      const payloadStr = JSON.stringify(snapshot);
+      const topic = getActiveSyncTopic();
 
+      let success = false;
       try {
-        if (blobId) {
-          const res = await fetch(`https://jsonblob.com/api/jsonBlob/${blobId}`, {
-            method: "PUT",
-            headers: {
-              "Content-Type": "application/json",
-              "Accept": "application/json"
-            },
-            body: JSON.stringify(snapshot)
-          });
-          if (!res.ok) throw new Error("HTTP " + res.status);
-        } else {
-          const res = await fetch("https://jsonblob.com/api/jsonBlob", {
+        let res;
+        if (payloadStr.length < 3800) {
+          res = await fetch(`https://ntfy.sh/${topic}`, {
             method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "Accept": "application/json"
-            },
-            body: JSON.stringify(snapshot)
+            body: payloadStr
           });
-          if (!res.ok) throw new Error("HTTP " + res.status);
-          const location = res.headers.get("Location") || "";
-          const newBlobId = location.split("/").pop();
-          if (newBlobId) {
-            blobId = newBlobId;
-            setSyncBlobId(newBlobId);
-          }
+        } else {
+          res = await fetch(`https://ntfy.sh/${topic}`, {
+            method: "PUT",
+            headers: { "Filename": "store_data.json" },
+            body: payloadStr
+          });
         }
-        setLastSyncTime(Date.now());
-        if (!silent) showToast("Cloud Sync: Live changes saved online!");
-      } catch(err) {
-        console.warn("Cloud push warning:", err);
-        if (!silent) showToast("Cloud server unreachable from local file. Use 1-Click WhatsApp Sync Code below!");
-      } finally {
-        isSyncInProgress = false;
-        setSyncSpinning(false);
-        updateSyncStatusUI();
+        if (res.ok) success = true;
+      } catch(e) {
+        console.warn("Realtime broadcast warning:", e);
       }
+
+      setLastSyncTime(Date.now());
+      if (success) {
+        if (!silent) showToast("Live Sync: Update sent to all devices!");
+      } else {
+        if (!silent) showToast("Saved locally. Reconnecting live channel...");
+      }
+
+      isSyncInProgress = false;
+      setSyncSpinning(false);
+      updateSyncStatusUI();
     }
 
     async function pullFromCloud(silent = false) {
       if (isSyncInProgress) return;
-      const blobId = getSyncBlobId();
-      if (!blobId) return;
-
       isSyncInProgress = true;
       setSyncSpinning(true);
+      const topic = getActiveSyncTopic();
+
       try {
-        const res = await fetch(`https://jsonblob.com/api/jsonBlob/${blobId}`, {
-          method: "GET",
-          headers: {
-            "Accept": "application/json"
+        const res = await fetch(`https://ntfy.sh/${topic}/json?poll=1&since=all`);
+        if (res.ok) {
+          const text = await res.text();
+          const lines = text.trim().split("\n");
+          let latest = null;
+          let maxTs = 0;
+          for (const line of lines) {
+            try {
+              const msg = JSON.parse(line);
+              if (msg.event === "message" && msg.message) {
+                const parsed = JSON.parse(msg.message);
+                if (parsed && parsed.updatedAt && parsed.updatedAt > maxTs) {
+                  maxTs = parsed.updatedAt;
+                  latest = parsed;
+                }
+              }
+            } catch(e) {}
           }
-        });
-        if (!res.ok) throw new Error("HTTP " + res.status);
-        const data = await res.json();
-        if (data && data.updatedAt) {
-          const lastTs = getLastSyncTime();
-          if (!silent || (data.updatedAt > lastTs && data.deviceId !== getDeviceId())) {
-            applyFullDatabaseSnapshot(data, "Cloud Pull");
-            if (!silent) showToast("Live data synchronized from other device!");
+          if (latest && latest.deviceId !== getDeviceId()) {
+            const localTs = getLastSyncTime();
+            if (latest.updatedAt > localTs || employees.length === 0) {
+              applyFullDatabaseSnapshot(latest, "Realtime Poll");
+              if (!silent) showToast("Latest data synchronized from live cloud!");
+            }
           }
         }
-      } catch(err) {
-        console.warn("Cloud pull warning:", err);
-        if (!silent) showToast("Could not reach cloud sync. Using local data.");
+      } catch(e) {
+        console.warn("Pull warning:", e);
       } finally {
         isSyncInProgress = false;
         setSyncSpinning(false);
@@ -3301,7 +3348,7 @@
         cloudSyncNavText.textContent = `Sync: ${syncKey || "Active"}`;
         modalSyncIndicator.className = "w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse";
         modalSyncStatusLabel.textContent = "Cloud Sync Active (Live Connected)";
-        modalSyncIdDisplay.textContent = syncKey || blobId;
+        modalSyncIdDisplay.textContent = getActiveSyncTopic();
         disconnectCloudBtn.classList.remove("hidden");
       } else {
         cloudSyncNavDot.className = "w-2 h-2 rounded-full bg-slate-400";
@@ -3519,6 +3566,9 @@
     }
     checkUrlHashOnBoot();
     updateSyncStatusUI();
+    initRealtimeListener();
+    // Auto pull from cloud immediately on load// Auto pull from cloud immediately on load so mobile gets PC data right away
+    pullFromCloud(true);
 
     // Initial App Boot
     updatePortalUI();
