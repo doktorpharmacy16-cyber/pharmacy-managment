@@ -635,6 +635,7 @@
           <div id="emp-live-timer" class="font-mono text-4xl sm:text-5xl font-black text-slate-900 tracking-wider">
             00:00:00
           </div>
+          <!-- Salary hidden for staff per store policy -->
           
           <div class="flex items-center justify-center gap-3 flex-wrap">
             <button type="button" id="emp-start-work-btn" class="px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm shadow-sm transition flex items-center gap-2">
@@ -702,11 +703,10 @@
 
             <div>
               <label for="leave-type-select" class="block text-xs font-semibold text-slate-600 mb-1">Leave Category</label>
-              <select id="leave-type-select" class="w-full px-3 py-2 border border-slate-300 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white">
-                <option value="Sick Leave">Sick Leave</option>
-                <option value="Personal Leave">Personal Leave</option>
-                <option value="Emergency Leave">Emergency Leave</option>
-                <option value="Half Day Leave">Half Day Leave</option>
+              <select id="leave-type-select" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                <option value="Full Day">Full Day (Poori Chutti - 1 Din Kaat)</option>
+                <option value="Half Day">Half Day (Aadhi Chutti - Aadha Din Kaat)</option>
+                <option value="Short Duty">Early Departure / Late Permission</option>
               </select>
             </div>
 
@@ -1792,19 +1792,37 @@
             statusBadge = `<span class="px-2 py-0.5 rounded-full text-[10px] font-medium bg-slate-800 text-slate-400">Not Clocked In</span>`;
           }
 
+          const calc = calculateEarnedSalary(emp);
           const card = document.createElement("div");
-          card.className = `p-3 rounded-xl border ${cardBg} flex items-center justify-between text-xs transition`;
+          card.className = `p-3.5 rounded-2xl border ${cardBg} flex items-center justify-between text-xs transition shadow-sm`;
           card.innerHTML = `
             <div>
-              <div class="font-bold text-white text-sm flex items-center gap-1.5">
+              <div class="font-bold text-white text-sm flex items-center gap-1.5 flex-wrap">
                 <span>${escapeHtml(emp.name)}</span>
                 ${emp.isLate ? '<span class="text-[9px] bg-rose-500/20 text-rose-300 px-1.5 py-0.2 rounded border border-rose-500/40">Late</span>' : ''}
+                ${calc.todayShortHours > 0 ? `<span class="text-[9px] bg-amber-500/20 text-amber-300 px-1.5 py-0.2 rounded border border-amber-500/40 font-mono">Short -₹${calc.todayShortDeduction}</span>` : ''}
+                ${calc.totalAbsentDays > 0 ? `<span class="text-[9px] bg-rose-500/20 text-rose-300 px-1.5 py-0.2 rounded border border-rose-500/40 font-mono">Chutti -₹${calc.leaveDeduction - calc.todayShortDeduction}</span>` : ''}
               </div>
-              <div class="text-[11px] text-slate-400 mt-0.5">${escapeHtml(emp.role)} • <span class="text-slate-300 font-mono">${formatTime12h(emp.shiftStartTime)}</span></div>
+              <div class="text-[11px] text-slate-300 mt-0.5 flex items-center gap-1.5 flex-wrap">
+                <span>${escapeHtml(emp.role)}</span>
+                <span class="text-slate-500">•</span>
+                <span class="text-emerald-400 font-mono font-semibold">⏰ ${formatTime12h(emp.shiftStartTime)} - ${formatTime12h(emp.shiftEndTime)} (${calc.shiftHours}h Shift)</span>
+              </div>
+              <div class="text-[11px] text-slate-400 mt-1 flex items-center gap-2 flex-wrap">
+                <span>Live Earned: <strong class="text-emerald-300 font-mono font-bold">₹${calc.todayEarned}</strong></span>
+                <span class="text-slate-600">•</span>
+                <span>(₹${calc.hourlyRate}/hr)</span>
+                ${calc.todayShortHours > 0 ? `<span class="text-amber-400 font-semibold">• ${calc.todayShortHours}h short</span>` : ''}
+              </div>
             </div>
-            <div class="text-right space-y-1">
+            <div class="text-right space-y-1.5 flex-shrink-0">
               <div>${statusBadge}</div>
-              <div class="font-mono text-xs font-bold ${isWorking ? 'text-emerald-400' : 'text-slate-400'}">${formatSeconds(currentWorked)}</div>
+              <div class="font-mono text-sm font-black ${isWorking ? 'text-emerald-300 tracking-wider' : 'text-slate-400'}">
+                ${formatSeconds(currentWorked)}
+              </div>
+              <div class="text-[10px] text-slate-400 font-mono">
+                ${calc.hoursWorked} / ${calc.shiftHours} hrs
+              </div>
             </div>
           `;
           liveStaffMonitorGrid.appendChild(card);
@@ -1813,6 +1831,82 @@
 
       updateMonitor();
       liveMonitorInterval = setInterval(updateMonitor, 1000);
+    }
+
+    // Shift & Hourly Pro-Rata Salary Engine (Exact Deductions for Half-Day, Short Hours & Absent Days)
+    function calculateEarnedSalary(emp) {
+      const baseSalary = Number(emp.salary || emp.baseSalary || 0);
+      const totalSecs = getEmpWorkedSeconds(emp);
+      const hoursWorked = totalSecs / 3600;
+
+      // 1. Shift scheduled hours calculation from custom shift times
+      let shiftHours = 8;
+      if (emp.shiftStartTime && emp.shiftEndTime) {
+        const [sh, sm] = emp.shiftStartTime.split(":").map(Number);
+        const [eh, em] = emp.shiftEndTime.split(":").map(Number);
+        let diff = (eh * 60 + em) - (sh * 60 + sm);
+        if (diff <= 0) diff += 24 * 60; // night shift overnight wrap
+        shiftHours = Math.max(1, diff / 60);
+      }
+
+      // 2. Full Month (30 Days Base, No Fixed Weekoffs)
+      const daysInMonth = 30;
+      const dailySalaryRate = baseSalary > 0 ? (baseSalary / daysInMonth) : 0;
+      const hourlySalaryRate = shiftHours > 0 ? (dailySalaryRate / shiftHours) : 0;
+
+      // 3. Today's Earned Salary & Shortfall (Pro-Rata to the exact minute/hour)
+      // If employee worked 1 hr, 2 hrs, or half-day (4 hrs), they earn exactly worked hours * hourly rate
+      const todayEarned = Math.round(hoursWorked * hourlySalaryRate);
+
+      // Today Short Hours & Deduction (If duty finished or paused short of full shift)
+      let todayShortHours = 0;
+      let todayShortDeduction = 0;
+      if (emp.isShiftCompleted && hoursWorked < shiftHours) {
+        todayShortHours = Number((shiftHours - hoursWorked).toFixed(1));
+        todayShortDeduction = Math.round(todayShortHours * hourlySalaryRate);
+      }
+
+      // 4. Overtime calculation (Hours worked beyond scheduled shift length)
+      const otHours = Math.max(0, hoursWorked - shiftHours);
+      const otRate = Number(emp.overtimeRate || Math.round(hourlySalaryRate * 1.5) || 120);
+      const otPay = Math.round(otHours * otRate);
+
+      // 5. Leave & Absence Deductions
+      // Approved leaves count
+      const leavesList = emp.leaves || [];
+      const approvedFullLeaves = leavesList.filter(l => l.status === "Approved" && (!l.type || l.type === "Full Day")).length;
+      const approvedHalfLeaves = leavesList.filter(l => l.status === "Approved" && l.type === "Half Day").length;
+      
+      // Full day leave = 1 daily rate, Half day leave = 0.5 daily rate
+      const leaveDaysCount = approvedFullLeaves + (approvedHalfLeaves * 0.5);
+      const isAbsentToday = (emp.status === "Absent" || emp.status === "On Leave") && hoursWorked === 0;
+      const totalAbsentDays = leaveDaysCount + (isAbsentToday ? 1 : 0);
+      const fullDayDeduction = Math.round(totalAbsentDays * dailySalaryRate);
+
+      // Total deduction = Full absent days deduction + today's short hours deduction (for half day or 1-2 hrs)
+      const totalDeduction = fullDayDeduction + todayShortDeduction;
+
+      // 6. Net monthly salary due to employee (Base - Total Deductions + OT - Advances)
+      const advance = Number(emp.advance || 0);
+      const netPayableMonth = Math.max(0, baseSalary - totalDeduction + otPay - advance);
+
+      return {
+        hoursWorked: Number(hoursWorked.toFixed(2)),
+        shiftHours: Number(shiftHours.toFixed(1)),
+        hourlyRate: Math.round(hourlySalaryRate),
+        dailyRate: Math.round(dailySalaryRate),
+        todayEarned,
+        todayShortHours,
+        todayShortDeduction,
+        otHours: Number(otHours.toFixed(1)),
+        otRate,
+        otPay,
+        totalAbsentDays,
+        leaveDeduction: totalDeduction,
+        advance,
+        monthlyNetDue: netPayableMonth,
+        baseSalary
+      };
     }
 
     function renderTable(searchTerm = "") {
@@ -1835,19 +1929,19 @@
 
       let grandTotalPending = 0;
       employees.forEach(e => {
-        const salary = Number(e.salary || 0);
-        const otPay = Number((e.overtimeHours || 0) * (e.overtimeRate || 100));
-        const advance = Number(e.advance || 0);
-        grandTotalPending += Math.max(0, salary + otPay - advance);
+        const calc = calculateEarnedSalary(e);
+        grandTotalPending += calc.monthlyNetDue;
       });
 
       filtered.forEach((emp) => {
-        const salary = Number(emp.salary || 0);
-        const otHours = Number(emp.overtimeHours || 0);
-        const otRate = Number(emp.overtimeRate || 100);
-        const otPay = otHours * otRate;
-        const advance = Number(emp.advance || 0);
-        const balance = Math.max(0, salary + otPay - advance);
+        const calc = calculateEarnedSalary(emp);
+        const salary = calc.baseSalary;
+        const otHours = calc.otHours;
+        const otRate = calc.otRate;
+        const otPay = calc.otPay;
+        const advance = calc.advance;
+        const balance = calc.monthlyNetDue;
+        const todayEarned = calc.todayEarned;
 
         const tr = document.createElement("tr");
         tr.className = "hover:bg-slate-50 transition";
@@ -1883,14 +1977,16 @@
           `🏥 *${storeName} - Staff Salary Slip*\n` +
           `👤 Employee: ${emp.name}\n` +
           `💼 Role: ${emp.role}\n` +
-          `⏰ Shift Timing: ${shiftDisplay}\n` +
-          `⏳ Duty Logged: ${formatSeconds(totalWorked)}\n` +
+          `⏰ Scheduled Shift: ${shiftDisplay} (${calc.shiftHours} hrs)\n` +
+          `⏳ Duty Logged: ${formatSeconds(totalWorked)} (${calc.hoursWorked} hrs)\n` +
+          `💵 Hourly Rate: ₹${calc.hourlyRate}/hr (Daily: ₹${calc.dailyRate})\n` +
           `--------------------------\n` +
-          `💵 Base Salary: ${formatRupees(salary)}\n` +
-          `⏱️ Overtime (${otHours} hrs @ ₹${otRate}): +${formatRupees(otPay)}\n` +
-          `💳 Advance Deducted: -${formatRupees(advance)}\n` +
-          `✅ Net Balance Due: ${formatRupees(balance)}\n` +
-          `📌 Status: ${emp.status} (${emp.isLate ? 'Late Arrival' : 'On Time'})\n` +
+          `💰 Monthly Base Salary: ${formatRupees(salary)}\n` +
+          (calc.todayShortHours > 0 ? `⚠️ Short Duty Deduction (${calc.todayShortHours}h): -₹${calc.todayShortDeduction}\n` : '') +
+          (calc.totalAbsentDays > 0 ? `🏖️ Leave Deduction (${calc.totalAbsentDays} days): -₹${calc.leaveDeduction - calc.todayShortDeduction}\n` : '') +
+          (otHours > 0 ? `⏱️ Overtime (${otHours}h @ ₹${otRate}): +${formatRupees(otPay)}\n` : '') +
+          (advance > 0 ? `💳 Advance Deducted: -${formatRupees(advance)}\n` : '') +
+          `✅ *Net Balance Due: ${formatRupees(balance)}*\n` +
           `--------------------------\n` +
           `Thank you! 🙏`
         );
@@ -1914,12 +2010,19 @@
             ${tasksSummary}
           </td>
           <td class="py-3 px-3">
-            <div class="text-xs font-semibold text-slate-900 flex items-center gap-1.5">
+            <div class="text-xs font-semibold text-slate-900 flex items-center justify-between">
               <span>Base: ${formatRupees(salary)}</span>
+              <span class="text-[10px] text-emerald-700 font-bold bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">Earned: ₹${calc.todayEarned}</span>
             </div>
-            ${otHours > 0 ? `<div class="text-[11px] text-indigo-700 font-medium">OT (${otHours}h): +${formatRupees(otPay)}</div>` : ''}
-            <div class="text-[11px] text-amber-700">Advance: -${formatRupees(advance)}</div>
-            <div class="text-xs font-bold text-emerald-700 mt-0.5">Net Due: ${formatRupees(balance)}</div>
+            <div class="text-[11px] text-slate-500 mt-0.5 font-mono">Shift: ${calc.shiftHours}h (₹${calc.hourlyRate}/hr • ₹${calc.dailyRate}/day)</div>
+            ${calc.todayShortHours > 0 ? `<div class="text-[11px] text-amber-700 font-semibold bg-amber-50 px-1 rounded mt-0.5 inline-block">Short (${calc.todayShortHours}h kam): -₹${calc.todayShortDeduction}</div>` : ''}
+            ${calc.totalAbsentDays > 0 ? `<div class="text-[11px] text-rose-600 font-semibold mt-0.5">Chutti (${calc.totalAbsentDays}d): -₹${calc.leaveDeduction - calc.todayShortDeduction}</div>` : ''}
+            ${otHours > 0 ? `<div class="text-[11px] text-indigo-700 font-medium mt-0.5">OT (${otHours}h @ ₹${otRate}): +${formatRupees(otPay)}</div>` : ''}
+            ${advance > 0 ? `<div class="text-[11px] text-amber-700 font-medium">Advance: -${formatRupees(advance)}</div>` : ''}
+            <div class="text-xs font-bold text-emerald-700 mt-1 flex items-center justify-between border-t border-slate-100 pt-0.5">
+              <span>Net Due:</span>
+              <span>${formatRupees(balance)}</span>
+            </div>
           </td>
           <td class="py-3 px-3">
             <div class="space-y-1">
@@ -2290,6 +2393,7 @@
       const currentWorked = getEmpWorkedSeconds(emp);
       emp.workedSeconds = currentWorked;
       empLiveTimer.textContent = formatSeconds(currentWorked);
+      // Staff portal: salary calculations strictly hidden from staff
 
       if (emp.isClockedIn) {
         timerInterval = setInterval(() => {
