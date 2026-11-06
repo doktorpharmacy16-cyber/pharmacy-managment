@@ -1,0 +1,3825 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <title>Medical Store Staff & Pharmacy ERP System</title>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+    @media print {
+      .no-print { display: none !important; }
+      body { background: white; padding: 0; }
+    }
+  </style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen p-4 sm:p-6 lg:p-8">
+  <div class="max-w-6xl mx-auto space-y-6">
+
+    <!-- Top Navigation / Role Bar -->
+    <div class="bg-slate-900 text-white px-5 py-3 rounded-2xl flex flex-wrap items-center justify-between gap-3 shadow-sm no-print">
+      <div class="flex items-center gap-3">
+        <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
+        <span class="text-xs uppercase tracking-wider text-slate-400 font-semibold">Active Portal:</span>
+        <span id="current-portal-badge" class="px-2.5 py-0.5 rounded-md bg-emerald-500/20 text-emerald-300 font-bold text-xs">
+          👑 Store Owner (Admin Portal)
+        </span>
+      </div>
+
+      <div class="flex items-center gap-2">
+        <span id="active-user-name" class="text-xs text-slate-300 hidden sm:inline">Logged in as: Administrator</span>
+        <button type="button" id="cloud-sync-nav-btn" class="px-2.5 py-1.5 rounded-lg bg-emerald-950/80 hover:bg-emerald-900 text-xs text-emerald-300 font-medium transition border border-emerald-700/60 flex items-center gap-1.5 shadow-sm" title="Live Multi-Device Cloud Sync">
+          <span class="w-2 h-2 rounded-full bg-slate-400" id="cloud-sync-nav-dot"></span>
+          <span id="cloud-sync-nav-text">Sync: Mobile & PC</span>
+        </button>
+        <button type="button" id="edit-pharmacy-nav-btn" class="hidden px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs text-slate-200 font-medium transition border border-slate-700 items-center gap-1">
+          <svg class="w-3.5 h-3.5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+          </svg>
+          <span>Store Name</span>
+        </button>
+        <button type="button" id="change-owner-pin-nav-btn" class="hidden px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs text-slate-200 font-medium transition border border-slate-700 items-center gap-1">
+          <svg class="w-3.5 h-3.5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"></path>
+          </svg>
+          <span>Change Master PIN</span>
+        </button>
+        <button type="button" id="switch-account-btn" class="px-3 py-1.5 rounded-lg bg-rose-600/80 hover:bg-rose-600 text-xs text-white font-semibold transition border border-rose-500 flex items-center gap-1.5 shadow-sm">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+          </svg>
+          <span id="nav-logout-text">Logout / Switch Portal</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Notification Toast -->
+    <div id="toast-banner" class="hidden transition-all duration-300 p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-sm flex items-center justify-between shadow-sm">
+      <div class="flex items-center gap-2">
+        <svg class="w-5 h-5 text-emerald-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+        </svg>
+        <span id="toast-message" class="font-medium"></span>
+      </div>
+      <button type="button" id="close-toast-btn" class="text-emerald-600 hover:text-emerald-900 font-bold text-lg leading-none">&times;</button>
+    </div>
+
+    <!-- ==================================================== -->
+    <!-- 0. DUAL LOGIN SCREEN (Shown when logged out)         -->
+    <!-- ==================================================== -->
+    <div id="dual-login-view" class="hidden space-y-8 py-6">
+      <div class="text-center max-w-lg mx-auto space-y-2">
+        <div class="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-emerald-600 text-white font-black text-3xl shadow-sm mb-1">
+          +
+        </div>
+        <h1 class="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight" id="login-pharmacy-title">Pharmacy Staff & Store Management</h1>
+        <p class="text-sm text-slate-500">Sign in with your secret PIN to access your workspace</p>
+      </div>
+
+      <!-- Two Separate Login Cards -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+        
+        <!-- Left Card: Employee Login with PIN -->
+        <div class="bg-white p-7 rounded-3xl shadow-sm border border-slate-200 hover:border-emerald-300 transition space-y-5 flex flex-col justify-between">
+          <div class="space-y-4">
+            <div class="w-12 h-12 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-700 flex items-center justify-center">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+              </svg>
+            </div>
+            <div>
+              <h2 class="text-xl font-bold text-slate-900">Staff Portal (Employee Login)</h2>
+              <p class="text-xs text-slate-500 mt-1">Clock in for shift, manage daily tasks, apply for leave & submit report</p>
+            </div>
+            
+            <div class="space-y-3 pt-1">
+              <div>
+                <label for="emp-direct-login-select" class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1">Select Your Name</label>
+                <select id="emp-direct-login-select" class="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white">
+                  <!-- Dynamically populated -->
+                </select>
+              </div>
+
+              <div>
+                <label for="emp-direct-pin-input" class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1">Enter Your Secret PIN</label>
+                <input type="password" id="emp-direct-pin-input" autocomplete="new-password" maxlength="8" placeholder="Enter your confidential PIN" class="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                <div id="emp-direct-feedback" class="text-xs text-rose-600 hidden mt-1"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="space-y-2 pt-4">
+            <button type="button" id="emp-direct-login-btn" class="w-full py-3 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm rounded-xl shadow-sm transition flex items-center justify-center gap-2">
+              <span>Open Staff Workspace (Start Work)</span>
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path>
+              </svg>
+            </button>
+            <p class="text-[11px] text-slate-400 text-center">Passwords are strictly private and not remembered by browser.</p>
+          </div>
+        </div>
+
+        <!-- Right Card: Store Owner Login -->
+        <div class="bg-white p-7 rounded-3xl shadow-sm border border-slate-200 hover:border-slate-400 transition space-y-5 flex flex-col justify-between">
+          <div class="space-y-4">
+            <div class="w-12 h-12 rounded-2xl bg-slate-100 border border-slate-200 text-slate-900 flex items-center justify-center">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+              </svg>
+            </div>
+            <div>
+              <h2 class="text-xl font-bold text-slate-900">Store Management (Owner Admin)</h2>
+              <p class="text-xs text-slate-500 mt-1">Full control over payroll, cash register, medicine expiry, leaves and staff</p>
+            </div>
+
+            <div class="space-y-3 pt-1">
+              <div>
+                <label for="owner-direct-pin-input" class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1">Owner Master PIN</label>
+                <input type="password" id="owner-direct-pin-input" autocomplete="new-password" placeholder="Enter owner secret PIN" class="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-slate-900">
+                <div id="owner-direct-feedback" class="text-xs text-rose-600 hidden mt-1"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="space-y-2 pt-4">
+            <button type="button" id="owner-direct-login-btn" class="w-full py-3 px-4 bg-slate-900 hover:bg-slate-800 text-white font-bold text-sm rounded-xl shadow-sm transition flex items-center justify-center gap-2">
+              <span>Enter Management Dashboard</span>
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path>
+              </svg>
+            </button>
+            <p class="text-[11px] text-slate-400 text-center">Complete administrative authority and store audit controls.</p>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Mobile Pairing Callout Card in Login Screen -->
+      <div class="max-w-4xl mx-auto p-4 rounded-2xl bg-slate-900 text-white border border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-3 shadow-sm no-print">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center flex-shrink-0">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
+            </svg>
+          </div>
+          <div>
+            <h3 class="text-sm font-bold text-white">Using on Mobile Phone? (मोबाइल पर डाटा जोड़ें)</h3>
+            <p class="text-xs text-slate-400">Connect this device with your computer so all staff, shifts and records sync in real time.</p>
+          </div>
+        </div>
+        <button type="button" id="login-cloud-sync-btn" class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs transition flex items-center gap-1.5 shadow-sm whitespace-nowrap">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path>
+          </svg>
+          <span>Connect Mobile Sync</span>
+        </button>
+      </div>
+
+    <!-- ========================================== -->
+    <!-- 1. OWNER / ADMIN VIEW (Full Management)    -->
+    <!-- ========================================== -->
+    <div id="owner-view" class="space-y-6">
+      
+      <!-- Header with Pharmacy Branding -->
+      <header class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div class="flex items-center gap-3.5">
+          <div class="w-13 h-13 p-3 rounded-2xl bg-emerald-600 text-white flex items-center justify-center font-black text-2xl shadow-sm flex-shrink-0">
+            +
+          </div>
+          <div>
+            <div class="flex items-center gap-2 flex-wrap">
+              <h1 class="text-2xl font-black text-slate-900 tracking-tight" id="header-pharmacy-name">My Pharmacy & Healthcare</h1>
+              <span id="app-version-badge" class="text-[10px] bg-emerald-600 text-white font-black px-2 py-0.5 rounded-full uppercase tracking-wider shadow-sm">v3.5 Live Engine</span>
+              <button type="button" id="edit-pharmacy-name-btn" class="text-xs text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 px-2 py-0.5 rounded-md font-semibold transition no-print flex items-center gap-1" title="Change store name">
+                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                </svg>
+                <span>Edit Name</span>
+              </button>
+            </div>
+            <p class="text-sm text-slate-500 mt-0.5">Real-time staff tracking, custom shift timings, daily cash register & expiry alerts</p>
+          </div>
+        </div>
+
+        <!-- Quick Metrics Counters -->
+        <div class="flex items-center gap-2.5 flex-wrap">
+          <button type="button" id="header-quick-sync-btn" class="px-3 py-1.5 rounded-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs transition flex items-center gap-1.5 shadow-sm no-print" title="Live Refresh Counter PC Status">
+            <svg class="w-3.5 h-3.5" id="header-sync-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+            </svg>
+            <span id="header-sync-label">⚡ Sync PC Live</span>
+          </button>
+          <div class="inline-flex items-center px-3 py-1.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs sm:text-sm font-semibold">
+            Present: <span id="present-count" class="ml-1.5 font-bold">0</span>
+          </div>
+          <div class="inline-flex items-center px-3 py-1.5 rounded-full bg-slate-100 border border-slate-200 text-slate-700 text-xs sm:text-sm font-semibold">
+            Total Staff: <span id="staff-count" class="ml-1.5 font-bold">0</span>
+          </div>
+          <div class="inline-flex items-center px-3 py-1.5 rounded-full bg-amber-50 border border-amber-200 text-amber-800 text-xs sm:text-sm font-semibold">
+            Net Payroll Due: <span id="total-pending-salary" class="ml-1.5 font-bold">₹0</span>
+          </div>
+        </div>
+      </header>
+
+      <!-- Live Staff Duty Monitor (रियल-टाइम लाइव ट्रैकर) -->
+      <div class="bg-gradient-to-r from-slate-900 to-slate-800 text-white p-5 rounded-2xl shadow-sm space-y-4 no-print border border-slate-700">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div class="flex items-center gap-2.5">
+            <span class="w-3 h-3 rounded-full bg-emerald-400 animate-ping"></span>
+            <h2 class="text-base font-bold text-white tracking-wide">Live Pharmacy Duty Monitor (रियल-टाइम लाइव ट्रैकर)</h2>
+          </div>
+          <div class="flex items-center gap-2 text-xs text-slate-300">
+            <span class="px-2.5 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-semibold" id="active-duty-count-badge">
+              ● 0 Active On Floor
+            </span>
+            <span class="px-2.5 py-1 rounded-full bg-slate-800 border border-slate-700 font-mono text-slate-300" id="live-clock-display">
+              --:--:--
+            </span>
+          </div>
+        </div>
+
+        <div id="live-staff-monitor-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          <!-- Rendered via JS -->
+        </div>
+      </div>
+
+      <!-- Section 1: Staff Entry Form + Directory Grid -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+        <!-- Left Column: Add Staff Form with 100% Custom Shift Timings -->
+        <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 lg:col-span-1 h-fit space-y-4 no-print">
+          <div>
+            <h2 class="text-lg font-semibold text-slate-900">Add New Employee</h2>
+            <p class="text-xs text-slate-500 mt-0.5">Define custom shift timings, monthly salary & secret PIN</p>
+          </div>
+
+          <form id="add-employee-form" class="space-y-4">
+            <div>
+              <label for="emp-name" class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1">Full Name</label>
+              <input type="text" id="emp-name" required placeholder="e.g. Rahul Sharma" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition">
+            </div>
+
+            <div>
+              <label for="emp-role" class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1">Job Designation (Role)</label>
+              <select id="emp-role" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition bg-white">
+                <option value="Registered Pharmacist">Registered Pharmacist</option>
+                <option value="Billing & Cashier">Billing & Cashier</option>
+                <option value="Counter Sales Assistant">Counter Sales Assistant</option>
+                <option value="Inventory & Expiry Incharge">Inventory & Expiry Incharge</option>
+                <option value="Medicine Delivery Associate">Medicine Delivery Associate</option>
+              </select>
+            </div>
+
+            <div>
+              <label for="emp-dept" class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1">Department</label>
+              <select id="emp-dept" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition bg-white">
+                <option value="Prescription Rx Counter">Prescription Rx Counter</option>
+                <option value="OTC & Healthcare Counter">OTC & Healthcare Counter</option>
+                <option value="Storage & Inventory Warehouse">Storage & Inventory Warehouse</option>
+                <option value="Accounts & Cash Desk">Accounts & Cash Desk</option>
+              </select>
+            </div>
+
+            <!-- Custom Shift Timing Section (Owner Sets Directly) -->
+            <div class="space-y-2.5 p-3.5 bg-emerald-50/70 rounded-xl border border-emerald-200">
+              <div class="flex items-center justify-between">
+                <label class="block text-xs font-bold uppercase tracking-wider text-emerald-950">Custom Shift Timings</label>
+                <span class="text-[10px] font-bold text-emerald-700 bg-white px-2 py-0.5 rounded-full border border-emerald-200">Set Exact Hours</span>
+              </div>
+
+              <div class="grid grid-cols-2 gap-2.5">
+                <div>
+                  <label for="shift-start-time" class="block text-[11px] font-semibold text-slate-700 mb-0.5">Shift Starts At (आने का समय)</label>
+                  <input type="time" id="shift-start-time" value="09:30" required class="w-full px-2.5 py-1.5 border border-slate-300 rounded-lg text-xs bg-white font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                </div>
+                <div>
+                  <label for="shift-end-time" class="block text-[11px] font-semibold text-slate-700 mb-0.5">Shift Ends At (जाने का समय)</label>
+                  <input type="time" id="shift-end-time" value="20:30" required class="w-full px-2.5 py-1.5 border border-slate-300 rounded-lg text-xs bg-white font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                </div>
+              </div>
+
+              <div>
+                <label for="emp-shift" class="block text-[11px] font-semibold text-slate-700 mb-0.5">Shift Label / Name (e.g. Day Shift / Counter Duty)</label>
+                <input type="text" id="emp-shift" placeholder="e.g. Day Shift, Counter Duty, Emergency" class="w-full px-2.5 py-1.5 border border-slate-300 rounded-lg text-xs bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500">
+              </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label for="emp-salary" class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1">Monthly Salary (₹)</label>
+                <input type="number" id="emp-salary" required min="0" step="500" placeholder="e.g. 18000" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 transition">
+              </div>
+              <div>
+                <label for="emp-custom-pin" class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1">Secret PIN</label>
+                <input type="password" id="emp-custom-pin" autocomplete="new-password" minlength="4" maxlength="8" required placeholder="e.g. 4821" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 transition">
+              </div>
+            </div>
+
+            <div id="form-feedback" class="text-xs text-rose-600 hidden"></div>
+
+            <button type="submit" id="submit-btn" class="w-full py-2.5 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm rounded-lg shadow-sm transition flex items-center justify-center gap-2">
+              <span>Add to Directory</span>
+            </button>
+          </form>
+
+          <div class="pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
+            <span class="flex items-center gap-1.5 text-emerald-700 font-medium">
+              <svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+              </svg>
+              Auto-save active
+            </span>
+            <button type="button" id="print-btn" class="text-slate-600 hover:text-slate-900 hover:underline flex items-center gap-1">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path>
+              </svg>
+              <span>Print Report</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Right Column: Staff List with Search, Attendance, Salary & Actions -->
+        <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 lg:col-span-2 space-y-4">
+          
+          <!-- Controls Bar -->
+          <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 no-print">
+            <div>
+              <h2 class="text-lg font-semibold text-slate-900">Staff Directory & Payroll</h2>
+              <p class="text-xs text-slate-500">Live attendance, custom shift timings & salary management</p>
+            </div>
+
+            <!-- Search Input -->
+            <div class="relative w-full sm:w-56">
+              <input type="text" id="search-input" placeholder="Search name or role..." class="w-full pl-9 pr-3 py-1.5 border border-slate-300 rounded-lg text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition">
+              <svg class="w-4 h-4 text-slate-400 absolute left-3 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+              </svg>
+            </div>
+          </div>
+
+          <!-- Data Tools Bar -->
+          <div class="bg-slate-50 p-3 rounded-xl border border-slate-200 flex flex-wrap items-center justify-between gap-2 no-print text-xs">
+            <div class="flex items-center gap-2">
+              <button type="button" id="export-csv-btn" class="px-3 py-1.5 rounded-lg bg-white border border-slate-300 hover:bg-slate-100 text-slate-700 font-medium transition flex items-center gap-1.5 shadow-sm">
+                <svg class="w-3.5 h-3.5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                </svg>
+                <span>Download Excel (CSV)</span>
+              </button>
+              <button type="button" id="backup-btn" class="px-3 py-1.5 rounded-lg bg-white border border-slate-300 hover:bg-slate-100 text-slate-700 font-medium transition flex items-center gap-1.5 shadow-sm">
+                <svg class="w-3.5 h-3.5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path>
+                </svg>
+                <span>Backup Data (JSON)</span>
+              </button>
+            </div>
+
+            <div class="flex items-center gap-2">
+              <input type="file" id="restore-file-input" accept=".json" class="hidden">
+              <button type="button" id="restore-btn" class="px-3 py-1.5 rounded-lg bg-white border border-slate-300 hover:bg-slate-100 text-slate-700 font-medium transition flex items-center gap-1.5 shadow-sm">
+                <svg class="w-3.5 h-3.5 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path>
+                </svg>
+                <span>Restore Backup</span>
+              </button>
+            </div>
+
+            <div class="flex items-center gap-2">
+              <button type="button" id="open-cloud-sync-btn" class="px-3 py-1.5 rounded-lg bg-emerald-50 border border-emerald-300 hover:bg-emerald-100 text-emerald-800 font-medium transition flex items-center gap-1.5 shadow-sm text-xs" title="Connect Mobile Phone & PC">
+                <svg class="w-3.5 h-3.5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
+                </svg>
+                <span>Connect Mobile</span>
+              </button>
+              <button type="button" id="quick-sync-btn" class="px-3 py-1.5 rounded-lg bg-white border border-slate-300 hover:bg-slate-100 text-slate-700 font-medium transition flex items-center gap-1.5 shadow-sm text-xs" title="Instantly sync data now">
+                <svg class="w-3.5 h-3.5 text-emerald-600" id="quick-sync-spinner" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                </svg>
+                <span id="quick-sync-label">Sync Now</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Table View -->
+          <div class="overflow-x-auto border border-slate-100 rounded-xl">
+            <table class="w-full text-left border-collapse">
+              <thead>
+                <tr class="border-b border-slate-200 text-xs font-semibold uppercase tracking-wider text-slate-500 bg-slate-50">
+                  <th class="py-3 px-3">Staff & Secret PIN</th>
+                  <th class="py-3 px-3">Role & Shift Timing</th>
+                  <th class="py-3 px-3">Salary & Overtime</th>
+                  <th class="py-3 px-3">Duty Time & Late Status</th>
+                  <th class="py-3 px-3 text-right no-print">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="employee-table-body" class="divide-y divide-slate-100 text-sm">
+                <!-- Dynamically rendered via JS -->
+              </tbody>
+            </table>
+          </div>
+
+          <div id="empty-state" class="py-12 text-center text-slate-400 text-sm">
+            <div class="inline-flex items-center justify-center w-12 h-12 rounded-full bg-slate-100 text-slate-400 mb-2">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+              </svg>
+            </div>
+            <div class="font-medium text-slate-600">No employees registered yet.</div>
+            <div class="text-xs text-slate-400 mt-1">Add your real pharmacy staff members with custom shift hours using the form on the left.</div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Section 2: Daily Sales & Cash Register (Till Tally) -->
+      <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 space-y-5 no-print">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div>
+            <h2 class="text-lg font-bold text-slate-900 flex items-center gap-2">
+              <span class="w-3 h-3 rounded-full bg-emerald-500"></span>
+              <span>Daily Sales Register & Cash Drawer Tally</span>
+            </h2>
+            <p class="text-xs text-slate-500">Track daily counter cash, UPI payments, credit sales and closing till balance</p>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="text-xs font-semibold px-3 py-1 bg-slate-100 rounded-lg text-slate-700">
+              Today's Gross Sales: <strong id="tally-gross-sales" class="text-emerald-700 font-bold ml-1">₹0</strong>
+            </span>
+            <span class="text-xs font-semibold px-3 py-1 bg-emerald-50 rounded-lg text-emerald-800 border border-emerald-200">
+              Expected Till Cash: <strong id="tally-expected-cash" class="text-emerald-700 font-bold ml-1">₹0</strong>
+            </span>
+          </div>
+        </div>
+
+        <!-- Sales Form Inputs -->
+        <form id="sales-register-form" class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-5 gap-4 bg-slate-50 p-4 rounded-xl border border-slate-200">
+          <div>
+            <label for="sales-cash-input" class="block text-xs font-semibold uppercase text-slate-600 mb-1">Cash Sales (₹)</label>
+            <input type="number" id="sales-cash-input" min="0" step="50" placeholder="e.g. 18500" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500">
+          </div>
+          <div>
+            <label for="sales-upi-input" class="block text-xs font-semibold uppercase text-slate-600 mb-1">UPI / QR Sales (₹)</label>
+            <input type="number" id="sales-upi-input" min="0" step="50" placeholder="e.g. 9200" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500">
+          </div>
+          <div>
+            <label for="sales-credit-input" class="block text-xs font-semibold uppercase text-slate-600 mb-1">Credit / Udhaar (₹)</label>
+            <input type="number" id="sales-credit-input" min="0" step="50" placeholder="e.g. 1200" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500">
+          </div>
+          <div>
+            <label for="sales-expense-input" class="block text-xs font-semibold uppercase text-slate-600 mb-1">Cash Expense Out (₹)</label>
+            <input type="number" id="sales-expense-input" min="0" step="10" placeholder="e.g. 450" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500">
+          </div>
+          <div class="col-span-2 sm:col-span-4 lg:col-span-1 flex items-end">
+            <button type="submit" class="w-full py-2.5 px-3 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs rounded-lg transition shadow-sm">
+              + Save Day Tally
+            </button>
+          </div>
+        </form>
+
+        <!-- Past Tally Entries List -->
+        <div id="sales-history-list" class="space-y-2">
+          <!-- Rendered via JS -->
+        </div>
+      </div>
+
+      <!-- Section 3: Medicine Expiry Tracker & Alerts -->
+      <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 space-y-5 no-print">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div>
+            <h2 class="text-lg font-bold text-slate-900 flex items-center gap-2">
+              <span class="w-3 h-3 rounded-full bg-rose-500"></span>
+              <span>Medicine Expiry Tracker & Inventory Shelves</span>
+            </h2>
+            <p class="text-xs text-slate-500">Automatic early alerts for medicines nearing expiry (&lt; 60 days) to prevent stock loss</p>
+          </div>
+          <div class="flex items-center gap-2">
+            <span id="expiry-warning-badge" class="px-2.5 py-1 rounded-full text-xs font-bold bg-amber-50 text-amber-800 border border-amber-200">
+              0 Expiring Soon
+            </span>
+            <span id="expired-badge" class="px-2.5 py-1 rounded-full text-xs font-bold bg-rose-50 text-rose-800 border border-rose-200">
+              0 Expired
+            </span>
+          </div>
+        </div>
+
+        <!-- Add Medicine to Expiry Tracker -->
+        <form id="add-medicine-form" class="grid grid-cols-2 sm:grid-cols-5 gap-3 bg-slate-50 p-4 rounded-xl border border-slate-200 text-xs">
+          <div>
+            <label for="med-name-input" class="block font-semibold uppercase text-slate-600 mb-1">Medicine Name</label>
+            <input type="text" id="med-name-input" required placeholder="e.g. Augmentin 625 Duo" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500">
+          </div>
+          <div>
+            <label for="med-rack-input" class="block font-semibold uppercase text-slate-600 mb-1">Rack / Shelf No.</label>
+            <input type="text" id="med-rack-input" required placeholder="e.g. Rack 3B / Cold 1" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500">
+          </div>
+          <div>
+            <label for="med-batch-input" class="block font-semibold uppercase text-slate-600 mb-1">Batch Number</label>
+            <input type="text" id="med-batch-input" required placeholder="e.g. AUG-2489" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500">
+          </div>
+          <div>
+            <label for="med-expiry-input" class="block font-semibold uppercase text-slate-600 mb-1">Expiry Date</label>
+            <input type="date" id="med-expiry-input" required class="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500">
+          </div>
+          <div class="col-span-2 sm:col-span-1 flex items-end">
+            <button type="submit" class="w-full py-2 px-3 bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs rounded-lg transition shadow-sm">
+              + Add to Watchlist
+            </button>
+          </div>
+        </form>
+
+        <!-- Medicine Table -->
+        <div class="overflow-x-auto border border-slate-100 rounded-xl">
+          <table class="w-full text-left border-collapse text-xs">
+            <thead>
+              <tr class="border-b border-slate-200 font-semibold uppercase text-slate-500 bg-slate-50">
+                <th class="py-2.5 px-3">Medicine</th>
+                <th class="py-2.5 px-3">Rack Location</th>
+                <th class="py-2.5 px-3">Batch No</th>
+                <th class="py-2.5 px-3">Expiry Date</th>
+                <th class="py-2.5 px-3">Status Alert</th>
+                <th class="py-2.5 px-3 text-right">Action</th>
+              </tr>
+            </thead>
+            <tbody id="medicine-table-body" class="divide-y divide-slate-100">
+              <!-- Rendered via JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Section 4: Staff Leave Requests & Work Reports -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 no-print">
+        
+        <!-- Leave Requests Management -->
+        <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 space-y-4">
+          <div class="flex items-center justify-between">
+            <div>
+              <h2 class="text-lg font-semibold text-slate-900">Staff Leave Applications</h2>
+              <p class="text-xs text-slate-500">Incoming leave requests awaiting owner review</p>
+            </div>
+            <span id="owner-leave-badge" class="text-xs text-amber-800 font-semibold bg-amber-50 px-2.5 py-1 rounded-full border border-amber-200">0 Pending</span>
+          </div>
+
+          <div id="owner-leaves-list" class="space-y-3">
+            <!-- Filled via JS -->
+          </div>
+        </div>
+
+        <!-- Work Reports Overview -->
+        <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 space-y-4">
+          <div class="flex items-center justify-between">
+            <div>
+              <h2 class="text-lg font-semibold text-slate-900">Daily Staff Work Reports</h2>
+              <p class="text-xs text-slate-500">Shift summary reports submitted by staff members</p>
+            </div>
+            <span class="text-xs text-emerald-700 font-semibold bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-100">Live Sync</span>
+          </div>
+
+          <div id="owner-reports-list" class="space-y-3">
+            <!-- Filled via JS -->
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- ========================================== -->
+    <!-- 2. EMPLOYEE VIEW (Clean & No Management)   -->
+    <!-- ========================================== -->
+    <div id="employee-view" class="hidden space-y-6">
+      
+      <!-- Employee Banner with Pharmacy Name -->
+      <div class="bg-gradient-to-r from-emerald-600 to-teal-700 text-white p-6 rounded-2xl shadow-sm flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/15 text-xs font-semibold mb-2">
+            <span>🏥</span>
+            <span id="emp-portal-pharmacy-label">Pharmacy Staff Portal</span>
+          </div>
+          <h1 class="text-2xl font-bold tracking-tight">Welcome, <span id="emp-portal-name">Staff</span>!</h1>
+          <p class="text-sm text-emerald-100 mt-0.5">Role: <span id="emp-portal-role">Role</span> | Scheduled Shift: <span id="emp-portal-shift">Shift</span></p>
+        </div>
+
+        <div class="bg-white/10 backdrop-blur-md p-3.5 rounded-xl border border-white/20 text-center sm:text-right space-y-1">
+          <div class="text-xs text-emerald-200 uppercase font-semibold">Duty Status</div>
+          <div id="emp-portal-status" class="text-lg font-bold text-white">Shift Not Started</div>
+          <div id="emp-late-banner" class="hidden text-xs font-bold text-rose-200 bg-rose-900/40 px-2 py-0.5 rounded-md inline-block">
+            ⚠️ Late Arrival Logged
+          </div>
+        </div>
+      </div>
+
+      <!-- Time Counter Card -->
+      <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 space-y-5">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div>
+            <h2 class="text-lg font-bold text-slate-900">Duty Stopwatch (Shift Timer)</h2>
+            <p class="text-xs text-slate-500">Clock in when arriving at store, clock out when leaving</p>
+          </div>
+          <div class="flex items-center gap-2">
+            <span id="timer-live-badge" class="hidden px-2.5 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-bold animate-pulse">
+              ● Duty Active
+            </span>
+            <span id="emp-overtime-badge" class="hidden px-2.5 py-1 rounded-full bg-indigo-50 border border-indigo-200 text-indigo-700 text-xs font-bold animate-pulse">
+              ⏱️ Overtime Active (+OT)
+            </span>
+          </div>
+        </div>
+
+        <div class="bg-slate-50 border border-slate-200 rounded-2xl p-6 text-center space-y-4">
+          <div class="text-xs uppercase tracking-widest text-slate-400 font-bold">Total Logged Duty Time Today</div>
+          <div id="emp-live-timer" class="font-mono text-4xl sm:text-5xl font-black text-slate-900 tracking-wider">
+            00:00:00
+          </div>
+          <!-- Salary hidden for staff per store policy -->
+          
+          <div class="flex items-center justify-center gap-3 flex-wrap">
+            <button type="button" id="emp-start-work-btn" class="px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm shadow-sm transition flex items-center gap-2">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+              </svg>
+              <span>Clock In (Start Work)</span>
+            </button>
+
+            <button type="button" id="emp-pause-work-btn" class="hidden px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-semibold text-sm shadow-sm transition flex items-center gap-2">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+              </svg>
+              <span>Pause Break</span>
+            </button>
+
+            <button type="button" id="emp-stop-work-btn" class="hidden px-5 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-semibold text-sm shadow-sm transition flex items-center gap-2">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 10a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1 1v-4z"></path>
+              </svg>
+              <span>Clock Out (Finish & Logout)</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Employee Tasks, Work Report, and Leave Application Grid -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+        <!-- Column 1: My Tasks Assigned by Owner -->
+        <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 space-y-4">
+          <div class="flex items-center justify-between">
+            <div>
+              <h2 class="text-base font-bold text-slate-900">Assigned Tasks</h2>
+              <p class="text-xs text-slate-500">Store tasks assigned by owner</p>
+            </div>
+            <span id="emp-tasks-badge" class="px-2.5 py-0.5 rounded-full bg-indigo-50 text-indigo-700 text-xs font-bold border border-indigo-100">0 Tasks</span>
+              <button type="button" id="refresh-emp-tasks-btn" class="px-2 py-0.5 rounded-md bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-semibold border border-indigo-200 transition flex items-center gap-1 shadow-sm" title="Check for new tasks">
+                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                </svg>
+                <span>Refresh</span>
+              </button>
+          </div>
+
+          <div id="emp-tasks-list" class="space-y-2.5">
+            <!-- Rendered via JS -->
+          </div>
+        </div>
+
+        <!-- Column 2: Leave Application -->
+        <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 space-y-4">
+          <div>
+            <h2 class="text-base font-bold text-slate-900">Apply for Leave</h2>
+            <p class="text-xs text-slate-500">Submit leave request to store owner</p>
+          </div>
+
+          <form id="emp-leave-form" class="space-y-3">
+            <div>
+              <label for="leave-date-input" class="block text-xs font-semibold text-slate-600 mb-1">Leave Date</label>
+              <input type="date" id="leave-date-input" required class="w-full px-3 py-2 border border-slate-300 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500">
+            </div>
+
+            <div>
+              <label for="leave-type-select" class="block text-xs font-semibold text-slate-600 mb-1">Leave Category</label>
+              <select id="leave-type-select" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                <option value="Full Day">Full Day (Poori Chutti - 1 Din Kaat)</option>
+                <option value="Half Day">Half Day (Aadhi Chutti - Aadha Din Kaat)</option>
+                <option value="Short Duty">Early Departure / Late Permission</option>
+              </select>
+            </div>
+
+            <div>
+              <label for="leave-reason-input" class="block text-xs font-semibold text-slate-600 mb-1">Reason / Note</label>
+              <input type="text" id="leave-reason-input" required placeholder="e.g. High fever & medical checkup" class="w-full px-3 py-2 border border-slate-300 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500">
+            </div>
+
+            <button type="submit" class="w-full py-2.5 px-3 bg-amber-600 hover:bg-amber-700 text-white font-semibold text-xs rounded-xl shadow-sm transition flex items-center justify-center gap-1.5">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+              </svg>
+              <span>Submit Leave Application</span>
+            </button>
+          </form>
+
+          <div id="emp-leaves-history" class="space-y-2 pt-2 border-t border-slate-100">
+            <div class="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Recent Leave History:</div>
+            <div id="emp-leaves-list" class="space-y-1.5 text-xs text-slate-600">
+              <!-- Rendered via JS -->
+            </div>
+          </div>
+        </div>
+
+        <!-- Column 3: Submit Daily Report -->
+        <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 space-y-4">
+          <div>
+            <h2 class="text-base font-bold text-slate-900">Daily Work Report</h2>
+            <p class="text-xs text-slate-500">Summary of pharmacy work handled today</p>
+          </div>
+
+          <form id="emp-report-form" class="space-y-3">
+            <textarea id="emp-report-text" rows="4" required placeholder="e.g. Reorganized racks 3 & 4. Disposed 2 expired syrups. Completed billing for 45 evening prescriptions." class="w-full p-3 border border-slate-300 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500 transition"></textarea>
+
+            <button type="submit" class="w-full py-2.5 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs rounded-xl shadow-sm transition flex items-center justify-center gap-1.5">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path>
+              </svg>
+              <span>Submit Daily Report</span>
+            </button>
+          </form>
+
+          <div id="emp-previous-report" class="hidden p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs space-y-1">
+            <div class="font-bold text-slate-700">Your Submitted Report Today:</div>
+            <div id="emp-previous-report-content" class="text-slate-600 italic"></div>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
+  </div>
+
+  <!-- ========================================== -->
+  <!-- MODALS                                     -->
+  <!-- ========================================== -->
+
+  <!-- Multi-Device Cloud Sync Modal (Mobile & PC Real-Time Sync) -->
+  <div id="cloud-sync-modal" class="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-white rounded-3xl shadow-2xl border border-slate-200 max-w-lg w-full p-6 space-y-5 max-h-[90vh] overflow-y-auto">
+      <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+        <div class="flex items-center gap-2.5">
+          <div class="w-10 h-10 rounded-2xl bg-emerald-100 text-emerald-700 flex items-center justify-center flex-shrink-0">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
+            </svg>
+          </div>
+          <div>
+            <h3 class="text-base font-bold text-slate-900">Mobile & Computer Sync Guide</h3>
+            <p class="text-xs text-slate-500">Aapke phone aur computer ko 100% connect karne ka aasan tareeqa</p>
+          </div>
+        </div>
+        <button type="button" id="close-cloud-sync-modal-btn" class="text-slate-400 hover:text-slate-600 p-1">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Step 1: Open App on Mobile -->
+      <div class="p-4 rounded-2xl bg-amber-50/70 border border-amber-200 space-y-2">
+        <div class="flex items-center gap-2">
+          <span class="w-6 h-6 rounded-full bg-amber-500 text-white font-bold text-xs flex items-center justify-center flex-shrink-0">1</span>
+          <h4 class="text-xs font-bold text-amber-900">Step 1: Mobile par App chalane ke liye file bhein</h4>
+        </div>
+        <p class="text-xs text-amber-800 leading-relaxed">
+          Yeh app computer par local file me hai, isliye phone par chalane ke liye is file ko WhatsApp par apne phone me bhein aur <strong>Chrome</strong> me open karein:
+        </p>
+        <button type="button" id="download-app-file-btn" class="w-full py-2.5 px-3 bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs rounded-xl shadow-sm transition flex items-center justify-center gap-2">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+          </svg>
+          <span>Download App HTML File (Send to WhatsApp)</span>
+        </button>
+      </div>
+
+      <!-- Step 2: Instant WhatsApp Data Sync (Foolproof & 100% Reliable) -->
+      <div class="p-4 rounded-2xl bg-emerald-50/70 border border-emerald-200 space-y-3">
+        <div class="flex items-center gap-2">
+          <span class="w-6 h-6 rounded-full bg-emerald-600 text-white font-bold text-xs flex items-center justify-center flex-shrink-0">2</span>
+          <h4 class="text-xs font-bold text-emerald-900">Step 2: Dono me Same Data Sync karein (1-Click)</h4>
+        </div>
+        <p class="text-xs text-emerald-800 leading-relaxed">
+          Computer se apna sara staff, shift timings aur hisab 1-click me WhatsApp par bhein, aur phone me "Paste" kar dein:
+        </p>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
+          <button type="button" id="share-whatsapp-btn" class="py-2.5 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs transition flex items-center justify-center gap-2 shadow-sm">
+            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.711 2.598 2.669-.699c.969.539 1.77.825 2.791.825 3.181 0 5.767-2.586 5.767-5.766.001-3.18-2.585-5.768-5.767-5.768zm3.385 8.163c-.145.407-.743.766-1.042.809-.283.042-.647.06-1.049-.071-.24-.078-.549-.187-.939-.356-1.657-.718-2.736-2.404-2.819-2.515-.083-.112-.676-.899-.676-1.713 0-.814.428-1.213.58-1.378.152-.165.332-.207.443-.207.111 0 .222.001.319.006.104.005.243-.039.38.291.144.346.49 1.196.533 1.284.043.088.072.19.014.305-.058.115-.087.187-.174.288-.087.102-.183.228-.261.306-.087.087-.178.182-.077.355.101.173.45 1.741 1.966 2.088.196.045.362.033.498-.035.17-.085.731-.852.928-1.146.197-.294.394-.246.657-.148.263.098 1.666.786 1.952.929.286.143.477.214.548.333.07.12.07.697-.075 1.104z"/>
+            </svg>
+            <span>Send Data to WhatsApp</span>
+          </button>
+
+          <button type="button" id="copy-sync-code-btn" class="py-2.5 px-3 rounded-xl bg-white border border-emerald-300 hover:bg-emerald-100 text-emerald-800 font-bold text-xs transition flex items-center justify-center gap-1.5 shadow-sm">
+            <svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path>
+            </svg>
+            <span>Copy Sync Code</span>
+          </button>
+        </div>
+
+        <!-- Mobile Quick Paste Bar -->
+        <div class="pt-2 border-t border-emerald-200/60 space-y-2">
+          <label class="block text-xs font-semibold text-emerald-950">Mobile par Data Load karein (Paste on Phone):</label>
+          <div class="flex items-center gap-2">
+            <input type="text" id="paste-sync-code-input" placeholder="Yahan WhatsApp ka sync code paste karein..." class="flex-1 px-3 py-2 border border-emerald-300 rounded-xl text-xs font-mono bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500">
+            <button type="button" id="load-sync-code-btn" class="px-4 py-2 bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs rounded-xl shadow-sm transition whitespace-nowrap">
+              Load Data
+            </button>
+          </div>
+          <button type="button" id="paste-clipboard-sync-btn" class="w-full py-2 px-3 bg-emerald-100 hover:bg-emerald-200 text-emerald-800 font-semibold text-xs rounded-xl transition flex items-center justify-center gap-1.5">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+            </svg>
+            <span>📋 1-Tap Paste from Clipboard & Load</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Live Cloud Sync Channel (For Auto-Sync) -->
+      <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-3">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <span class="w-2.5 h-2.5 rounded-full bg-slate-400" id="modal-sync-indicator"></span>
+            <span class="text-xs font-bold text-slate-800" id="modal-sync-status-label">Local Only</span>
+          </div>
+          <span class="text-[11px] font-mono text-slate-500" id="modal-last-sync-time">Last Synced: Never</span>
+        </div>
+
+        <div class="flex items-center justify-between bg-white px-3 py-2 rounded-xl border border-slate-200 text-xs">
+          <span class="text-slate-500 font-medium">Store Sync ID:</span>
+          <span class="font-mono font-bold text-emerald-700" id="modal-sync-id-display">NOT_CONNECTED</span>
+        </div>
+
+        <div class="space-y-2">
+          <label for="cloud-sync-key-input" class="block text-xs font-semibold text-slate-700">
+            Secret Store Sync Key (Mobile number ya Store Code):
+          </label>
+          <div class="flex items-center gap-2">
+            <input type="text" id="cloud-sync-key-input" placeholder="e.g. MyStore-9876543210" class="flex-1 px-3 py-2 border border-slate-300 rounded-xl text-xs font-mono focus:outline-none focus:ring-2 focus:ring-emerald-500">
+            <button type="button" id="connect-cloud-btn" class="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs rounded-xl shadow-sm transition whitespace-nowrap">
+              Connect & Sync
+            </button>
+            <button type="button" id="disconnect-cloud-btn" class="hidden px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs rounded-xl transition whitespace-nowrap">
+              Disconnect
+            </button>
+          </div>
+        </div>
+
+        <div class="flex items-center justify-between pt-1">
+          <div class="flex items-center gap-2">
+            <input type="checkbox" id="auto-sync-toggle" checked class="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500 border-slate-300">
+            <label for="auto-sync-toggle" class="text-xs text-slate-600 font-medium">Auto-sync every 8s</label>
+          </div>
+          <button type="button" id="sync-now-modal-btn" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-sm transition flex items-center gap-1">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+            </svg>
+            <span>Sync Now</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- QR Code / Direct Link Section (With Clear Explanation) -->
+      <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200 text-center space-y-2">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-bold text-slate-800">QR Code / Direct Pairing Link</span>
+          <button type="button" id="copy-mobile-link-btn" class="text-xs text-indigo-600 font-semibold hover:underline">Copy Link</button>
+        </div>
+        <div id="sync-qrcode-container" class="flex items-center justify-center py-2 min-h-[100px]">
+          <!-- Rendered via JS -->
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Pharmacy Store Name Branding Modal -->
+  <div id="pharmacy-name-modal" class="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-white rounded-3xl shadow-2xl border border-slate-200 max-w-sm w-full p-6 space-y-4">
+      <div class="flex items-center justify-between">
+        <h3 class="text-base font-bold text-slate-900">Set Pharmacy Store Name</h3>
+        <button type="button" id="close-pharmacy-modal-btn" class="text-slate-400 hover:text-slate-600 p-1">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+          </svg>
+        </button>
+      </div>
+
+      <form id="pharmacy-name-form" class="space-y-3">
+        <div>
+          <label for="pharmacy-name-input" class="block text-xs font-semibold text-slate-600 mb-1">Your Medical Store / Pharmacy Name</label>
+          <input type="text" id="pharmacy-name-input" required placeholder="e.g. Sanjeevani Medicos" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
+          <p class="text-[11px] text-slate-400 mt-1">This name will appear on all headers, WhatsApp slips & reports.</p>
+        </div>
+
+        <div class="flex items-center gap-2 pt-2">
+          <button type="button" id="cancel-pharmacy-modal-btn" class="w-1/2 py-2 px-3 border border-slate-300 text-slate-700 font-medium text-xs rounded-lg hover:bg-slate-50 transition">
+            Cancel
+          </button>
+          <button type="submit" class="w-1/2 py-2 px-3 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs rounded-lg transition">
+            Save Store Name
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Edit Staff Salary & Custom Shift Timing Modal -->
+  <div id="edit-emp-modal" class="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-white rounded-3xl shadow-2xl border border-slate-200 max-w-md w-full p-6 sm:p-7 space-y-4">
+      <div class="flex items-center justify-between">
+        <div>
+          <h3 class="text-base font-bold text-slate-900">Edit Staff Salary & Shift Hours</h3>
+          <p class="text-xs text-slate-500">Update custom compensation and scheduled shift timing</p>
+        </div>
+        <button type="button" id="close-edit-modal-btn" class="text-slate-400 hover:text-slate-600 p-1">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+          </svg>
+        </button>
+      </div>
+
+      <form id="edit-emp-form" class="space-y-3.5">
+        <div>
+          <label for="edit-emp-name-input" class="block text-xs font-semibold text-slate-600 mb-1">Staff Full Name</label>
+          <input type="text" id="edit-emp-name-input" required class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
+        </div>
+
+        <div>
+          <label for="edit-emp-salary-input" class="block text-xs font-semibold text-slate-600 mb-1">Monthly Salary (₹)</label>
+          <input type="number" id="edit-emp-salary-input" required min="0" step="500" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
+        </div>
+
+        <div class="p-3.5 bg-emerald-50/70 rounded-xl border border-emerald-200 space-y-2">
+          <div class="text-xs font-bold uppercase text-emerald-950 tracking-wider">Custom Shift Schedule</div>
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <label for="edit-shift-start-input" class="block text-[11px] font-semibold text-slate-700 mb-0.5">Shift Starts At (आने का समय)</label>
+              <input type="time" id="edit-shift-start-input" required class="w-full px-2.5 py-1.5 border border-slate-300 rounded-lg text-xs bg-white font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500">
+            </div>
+            <div>
+              <label for="edit-shift-end-input" class="block text-[11px] font-semibold text-slate-700 mb-0.5">Shift Ends At (जाने का समय)</label>
+              <input type="time" id="edit-shift-end-input" required class="w-full px-2.5 py-1.5 border border-slate-300 rounded-lg text-xs bg-white font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500">
+            </div>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-2 pt-2">
+          <button type="button" id="cancel-edit-modal-btn" class="w-1/2 py-2 px-3 border border-slate-300 text-slate-700 font-medium text-xs rounded-lg hover:bg-slate-50 transition">
+            Cancel
+          </button>
+          <button type="submit" class="w-1/2 py-2 px-3 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs rounded-lg transition shadow-sm">
+            Save Changes
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Change Owner Master PIN Modal -->
+  <div id="owner-pin-modal" class="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-white rounded-3xl shadow-2xl border border-slate-200 max-w-sm w-full p-6 space-y-4">
+      <div class="flex items-center justify-between">
+        <h3 class="text-base font-bold text-slate-900">Change Owner Master PIN</h3>
+        <button type="button" id="close-owner-pin-modal-btn" class="text-slate-400 hover:text-slate-600 p-1">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+          </svg>
+        </button>
+      </div>
+
+      <form id="change-owner-pin-form" class="space-y-3">
+        <div>
+          <label for="new-owner-pin" class="block text-xs font-semibold text-slate-600 mb-1">New Confidential PIN (4-8 digits)</label>
+          <input type="password" id="new-owner-pin" autocomplete="new-password" required minlength="4" maxlength="8" placeholder="Enter new PIN" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-slate-900">
+        </div>
+        <div>
+          <label for="confirm-owner-pin" class="block text-xs font-semibold text-slate-600 mb-1">Confirm New PIN</label>
+          <input type="password" id="confirm-owner-pin" autocomplete="new-password" required minlength="4" maxlength="8" placeholder="Re-enter new PIN" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-slate-900">
+          <div id="change-pin-error" class="text-xs text-rose-600 hidden mt-1"></div>
+        </div>
+
+        <div class="flex items-center gap-2 pt-2">
+          <button type="button" id="cancel-owner-pin-btn" class="w-1/2 py-2 px-3 border border-slate-300 text-slate-700 font-medium text-xs rounded-lg hover:bg-slate-50 transition">
+            Cancel
+          </button>
+          <button type="submit" class="w-1/2 py-2 px-3 bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs rounded-lg transition">
+            Update PIN
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Change Staff PIN Modal -->
+  <div id="staff-pin-modal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-white rounded-2xl shadow-xl border border-slate-200 max-w-sm w-full p-6 space-y-4">
+      <div class="flex items-center justify-between">
+        <h3 class="text-base font-bold text-slate-900">Update Staff Secret PIN</h3>
+        <button type="button" id="close-staff-pin-btn" class="text-slate-400 hover:text-slate-600 p-1">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+          </svg>
+        </button>
+      </div>
+
+      <div class="text-xs text-slate-600">
+        Employee: <span id="modal-staff-name" class="font-bold text-slate-900"></span>
+      </div>
+
+      <form id="staff-pin-form" class="space-y-3">
+        <div>
+          <label for="new-staff-pin" class="block text-xs font-semibold text-slate-600 mb-1">New 4-Digit Staff PIN</label>
+          <input type="password" id="new-staff-pin" autocomplete="new-password" required minlength="4" maxlength="8" placeholder="e.g. 7492" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
+        </div>
+
+        <div class="flex items-center gap-2 pt-2">
+          <button type="button" id="cancel-staff-pin-btn" class="w-1/2 py-2 px-3 border border-slate-300 text-slate-700 font-medium text-xs rounded-lg hover:bg-slate-50 transition">
+            Cancel
+          </button>
+          <button type="submit" class="w-1/2 py-2 px-3 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs rounded-lg transition">
+            Save PIN
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Legacy Login Modal -->
+  <div id="login-modal" class="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-white rounded-3xl shadow-2xl border border-slate-200 max-w-md w-full p-6 sm:p-8 space-y-6">
+      <div class="flex items-center justify-between">
+        <div>
+          <h3 class="text-xl font-bold text-slate-900">Select Portal Login</h3>
+          <p class="text-xs text-slate-500 mt-0.5">Sign in as Store Owner or Staff Member</p>
+        </div>
+        <button type="button" id="close-login-btn" class="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Switch Tabs -->
+      <div class="grid grid-cols-2 p-1 bg-slate-100 rounded-xl gap-1 text-xs font-semibold">
+        <button type="button" id="tab-owner-btn" class="py-2.5 rounded-lg bg-white text-slate-900 shadow-sm transition">
+          👑 Store Owner
+        </button>
+        <button type="button" id="tab-emp-btn" class="py-2.5 rounded-lg text-slate-600 hover:text-slate-900 transition">
+          👤 Employee Staff
+        </button>
+      </div>
+
+      <!-- Owner Login Form -->
+      <form id="owner-login-form" class="space-y-4">
+        <div>
+          <label for="owner-pin-input" class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1">Owner Security PIN</label>
+          <input type="password" id="owner-pin-input" autocomplete="new-password" required placeholder="Enter secret PIN" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
+        </div>
+        <div id="owner-login-feedback" class="text-xs text-rose-600 hidden"></div>
+        <button type="submit" class="w-full py-2.5 px-4 bg-slate-900 hover:bg-slate-800 text-white font-semibold text-sm rounded-xl transition">
+          Enter Management Dashboard
+        </button>
+      </form>
+
+      <!-- Employee Login Form -->
+      <form id="emp-login-form" class="space-y-4 hidden">
+        <div>
+          <label for="emp-select-login" class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1">Select Staff Name</label>
+          <select id="emp-select-login" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white">
+            <!-- Populated via JS -->
+          </select>
+        </div>
+        <div>
+          <label for="emp-modal-pin-input" class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1">Staff Confidential PIN</label>
+          <input type="password" id="emp-modal-pin-input" autocomplete="new-password" placeholder="Enter PIN" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
+          <div id="emp-modal-feedback" class="text-xs text-rose-600 hidden mt-1"></div>
+        </div>
+        <button type="submit" class="w-full py-2.5 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm rounded-xl transition">
+          Open Staff Workspace
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Overtime Modal -->
+  <div id="overtime-modal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-white rounded-2xl shadow-xl border border-slate-200 max-w-sm w-full p-6 space-y-4">
+      <div class="flex items-center justify-between">
+        <h3 class="text-base font-bold text-slate-900">Log Staff Overtime</h3>
+        <button type="button" id="close-ot-modal-btn" class="text-slate-400 hover:text-slate-600 p-1">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+          </svg>
+        </button>
+      </div>
+
+      <div class="text-xs text-slate-600">
+        Staff Member: <span id="ot-emp-name" class="font-bold text-slate-900"></span>
+      </div>
+
+      <form id="overtime-form" class="space-y-3">
+        <div>
+          <label for="ot-hours-input" class="block text-xs font-semibold uppercase text-slate-600 mb-1">Overtime Hours</label>
+          <input type="number" id="ot-hours-input" required min="0.5" step="0.5" placeholder="e.g. 2" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
+        </div>
+
+        <div>
+          <label for="ot-rate-input" class="block text-xs font-semibold uppercase text-slate-600 mb-1">Rate per Hour (₹)</label>
+          <input type="number" id="ot-rate-input" required min="20" step="10" value="100" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
+        </div>
+
+        <div class="flex items-center gap-2 pt-2">
+          <button type="button" id="cancel-ot-btn" class="w-1/2 py-2 px-3 border border-slate-300 text-slate-700 font-medium text-xs rounded-lg hover:bg-slate-50 transition">
+            Cancel
+          </button>
+          <button type="submit" class="w-1/2 py-2 px-3 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs rounded-lg transition">
+            Save Overtime
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Assign Task Modal -->
+  <div id="task-modal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-white rounded-2xl shadow-xl border border-slate-200 max-w-sm w-full p-6 space-y-4">
+      <div class="flex items-center justify-between">
+        <h3 class="text-base font-bold text-slate-900">Assign New Store Task</h3>
+        <button type="button" id="close-task-modal-btn" class="text-slate-400 hover:text-slate-600 p-1">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+          </svg>
+        </button>
+      </div>
+
+      <div class="text-xs text-slate-600">
+        Assign to: <span id="task-emp-name" class="font-bold text-slate-900"></span>
+      </div>
+
+      <form id="assign-task-form" class="space-y-3">
+        <div>
+          <label for="task-desc-input" class="block text-xs font-semibold uppercase text-slate-600 mb-1">Task Description</label>
+          <input type="text" id="task-desc-input" required placeholder="e.g. Inspect Rack 4 for expiry bottles" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
+        </div>
+
+        <div class="flex items-center gap-2 pt-2">
+          <button type="button" id="cancel-task-btn" class="w-1/2 py-2 px-3 border border-slate-300 text-slate-700 font-medium text-xs rounded-lg hover:bg-slate-50 transition">
+            Cancel
+          </button>
+          <button type="submit" class="w-1/2 py-2 px-3 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs rounded-lg transition">
+            Assign Task
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Advance Modal -->
+  <div id="advance-modal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-white rounded-2xl shadow-xl border border-slate-200 max-w-sm w-full p-6 space-y-4">
+      <div class="flex items-center justify-between">
+        <h3 class="text-base font-bold text-slate-900">Record Salary Advance</h3>
+        <button type="button" id="close-modal-btn" class="text-slate-400 hover:text-slate-600 p-1 rounded-lg">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+          </svg>
+        </button>
+      </div>
+
+      <div class="text-sm text-slate-600">
+        Staff Member: <span id="modal-emp-name" class="font-semibold text-slate-900"></span>
+      </div>
+
+      <form id="advance-form" class="space-y-4">
+        <div>
+          <label for="advance-amount-input" class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1">Advance Amount (₹)</label>
+          <input type="number" id="advance-amount-input" required min="100" step="100" placeholder="e.g. 2000" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 transition">
+          <p class="text-[11px] text-slate-400 mt-1">This amount will be deducted from the employee's net monthly salary.</p>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <button type="button" id="cancel-advance-btn" class="w-1/2 py-2 px-3 border border-slate-300 text-slate-700 font-medium text-xs rounded-lg hover:bg-slate-50 transition">
+            Cancel
+          </button>
+          <button type="submit" class="w-1/2 py-2 px-3 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs rounded-lg transition">
+            Save Advance
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Settle Modal -->
+  <div id="settle-modal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-white rounded-2xl shadow-xl border border-slate-200 max-w-sm w-full p-6 space-y-4">
+      <div class="flex items-center justify-between">
+        <h3 class="text-base font-bold text-slate-900">Month-End Salary Settlement</h3>
+        <button type="button" id="close-settle-btn" class="text-slate-400 hover:text-slate-600 p-1 rounded-lg">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+          </svg>
+        </button>
+      </div>
+
+      <div class="space-y-2 text-sm text-slate-600">
+        <p>Have you paid the full pending net salary (<strong id="settle-emp-amount" class="text-emerald-700 font-bold"></strong>) to <strong id="settle-emp-name" class="text-slate-900"></strong>?</p>
+        <p class="text-xs text-slate-500">Confirming will reset advance and overtime records to ₹0 for the new month.</p>
+      </div>
+
+      <div class="flex items-center gap-2 pt-2">
+        <button type="button" id="cancel-settle-btn" class="w-1/2 py-2 px-3 border border-slate-300 text-slate-700 font-medium text-xs rounded-lg hover:bg-slate-50 transition">
+          Cancel
+        </button>
+        <button type="button" id="confirm-settle-btn" class="w-1/2 py-2 px-3 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs rounded-lg transition">
+          Confirm Settlement
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // 1. Storage Keys (Clean Slate v16)
+    const STORAGE_KEY = "medical_store_staff_db_v16";
+    const SALES_KEY = "medical_store_sales_db_v16";
+    const MEDICINE_KEY = "medical_store_medicines_db_v16";
+    const SESSION_KEY = "medical_store_active_session_v16";
+    const OWNER_PIN_KEY = "medical_store_owner_pin_v16";
+    const STORE_NAME_KEY = "medical_store_pharmacy_name_v16";
+
+    function getStoreName() {
+      try {
+        const saved = localStorage.getItem(STORE_NAME_KEY);
+        if (saved && saved.trim().length > 0) return saved.trim();
+      } catch(e) {}
+      return "My Pharmacy & Healthcare";
+    }
+
+    function setStoreName(name) {
+      try { localStorage.setItem(STORE_NAME_KEY, name.trim()); } catch(e) {}
+    }
+
+    function getOwnerMasterPin() {
+      try {
+        const saved = localStorage.getItem(OWNER_PIN_KEY);
+        if (saved && saved.trim().length > 0) return saved.trim();
+      } catch(e) {}
+      return "";
+    }
+
+    function setOwnerMasterPin(newPin) {
+      try { localStorage.setItem(OWNER_PIN_KEY, newPin.trim()); } catch(e) {}
+    }
+
+    function loadEmployees() {
+      try {
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed)) return parsed;
+        }
+      } catch (err) {
+        console.warn("Storage access restricted:", err);
+      }
+      return [];
+    }
+
+    function loadSales() {
+      try {
+        const saved = localStorage.getItem(SALES_KEY);
+        if (saved) return JSON.parse(saved);
+      } catch (err) {}
+      return [];
+    }
+
+    function loadMedicines() {
+      try {
+        const saved = localStorage.getItem(MEDICINE_KEY);
+        if (saved) return JSON.parse(saved);
+      } catch (err) {}
+      return [];
+    }
+
+    const SYNC_KEY_STORAGE = "medical_store_sync_key_v16";
+    const SYNC_BLOB_ID_KEY = "medical_store_sync_blob_id_v16";
+    const SYNC_AUTO_KEY = "medical_store_sync_auto_v16";
+    const LAST_SYNC_TS_KEY = "medical_store_sync_last_ts_v16";
+    const DEVICE_ID_KEY = "medical_store_device_id_v16";
+
+    function getDeviceId() {
+      try {
+        let id = localStorage.getItem(DEVICE_ID_KEY);
+        if (!id) {
+          id = "dev_" + Math.random().toString(36).substring(2, 10);
+          localStorage.setItem(DEVICE_ID_KEY, id);
+        }
+        return id;
+      } catch(e) {
+        return "dev_guest";
+      }
+    }
+
+    function getSyncKey() {
+      try { return localStorage.getItem(SYNC_KEY_STORAGE) || ""; } catch(e) { return ""; }
+    }
+    function setSyncKey(val) {
+      try { localStorage.setItem(SYNC_KEY_STORAGE, val ? val.trim() : ""); } catch(e) {}
+    }
+
+    function getSyncBlobId() {
+      try { return localStorage.getItem(SYNC_BLOB_ID_KEY) || ""; } catch(e) { return ""; }
+    }
+    function setSyncBlobId(val) {
+      try { localStorage.setItem(SYNC_BLOB_ID_KEY, val ? val.trim() : ""); } catch(e) {}
+    }
+
+    function isAutoSyncEnabled() {
+      try {
+        const val = localStorage.getItem(SYNC_AUTO_KEY);
+        return val !== "false";
+      } catch(e) { return true; }
+    }
+    function setAutoSyncEnabled(val) {
+      try { localStorage.setItem(SYNC_AUTO_KEY, val ? "true" : "false"); } catch(e) {}
+    }
+
+    function getLastSyncTime() {
+      try {
+        const ts = localStorage.getItem(LAST_SYNC_TS_KEY);
+        return ts ? parseInt(ts, 10) : 0;
+      } catch(e) { return 0; }
+    }
+    function setLastSyncTime(ts) {
+      try { localStorage.setItem(LAST_SYNC_TS_KEY, String(ts)); } catch(e) {}
+    }
+
+    function setStoreNameInternal(name) {
+      try { localStorage.setItem(STORE_NAME_KEY, name.trim()); } catch(e) {}
+    }
+    function setOwnerMasterPinInternal(newPin) {
+      try { localStorage.setItem(OWNER_PIN_KEY, newPin.trim()); } catch(e) {}
+    }
+    function saveEmployeesInternal() {
+      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(employees)); } catch (err) {}
+    }
+    function saveSalesInternal() {
+      try { localStorage.setItem(SALES_KEY, JSON.stringify(salesData)); } catch (err) {}
+    }
+    function saveMedicinesInternal() {
+      try { localStorage.setItem(MEDICINE_KEY, JSON.stringify(medicinesData)); } catch (err) {}
+    }
+
+    function saveEmployees() {
+      saveEmployeesInternal();
+      triggerAutoSync();
+    }
+    function saveSales() {
+      saveSalesInternal();
+      triggerAutoSync();
+    }
+    function saveMedicines() {
+      saveMedicinesInternal();
+      triggerAutoSync();
+    }
+
+    let employees = loadEmployees();
+    let salesData = loadSales();
+    let medicinesData = loadMedicines();
+
+    let currentSession = { role: "owner", empId: null };
+    try {
+      const sess = localStorage.getItem(SESSION_KEY);
+      if (sess) currentSession = JSON.parse(sess);
+    } catch(e) {}
+
+    let selectedEmployeeForAdvance = null;
+    let selectedEmployeeForSettle = null;
+    let selectedEmployeeForTask = null;
+    let selectedEmployeeForOT = null;
+    let selectedEmployeeForPin = null;
+    let selectedEmployeeForEdit = null;
+    let timerInterval = null;
+    let liveMonitorInterval = null;
+
+    // DOM Elements (Preserved all IDs)
+    const dualLoginView = document.getElementById("dual-login-view");
+    const ownerView = document.getElementById("owner-view");
+    const employeeView = document.getElementById("employee-view");
+    const currentPortalBadge = document.getElementById("current-portal-badge");
+    const activeUserName = document.getElementById("active-user-name");
+    const switchAccountBtn = document.getElementById("switch-account-btn");
+    const navLogoutText = document.getElementById("nav-logout-text");
+    const changeOwnerPinNavBtn = document.getElementById("change-owner-pin-nav-btn");
+    const editPharmacyNavBtn = document.getElementById("edit-pharmacy-nav-btn");
+
+    const headerPharmacyName = document.getElementById("header-pharmacy-name");
+    const loginPharmacyTitle = document.getElementById("login-pharmacy-title");
+    const empPortalPharmacyLabel = document.getElementById("emp-portal-pharmacy-label");
+    const editPharmacyNameBtn = document.getElementById("edit-pharmacy-name-btn");
+    const pharmacyNameModal = document.getElementById("pharmacy-name-modal");
+    const closePharmacyModalBtn = document.getElementById("close-pharmacy-modal-btn");
+    const cancelPharmacyModalBtn = document.getElementById("cancel-pharmacy-modal-btn");
+    const pharmacyNameForm = document.getElementById("pharmacy-name-form");
+    const pharmacyNameInput = document.getElementById("pharmacy-name-input");
+
+    const activeDutyCountBadge = document.getElementById("active-duty-count-badge");
+    const liveClockDisplay = document.getElementById("live-clock-display");
+    const liveStaffMonitorGrid = document.getElementById("live-staff-monitor-grid");
+
+    const empDirectLoginSelect = document.getElementById("emp-direct-login-select");
+    const empDirectPinInput = document.getElementById("emp-direct-pin-input");
+    const empDirectFeedback = document.getElementById("emp-direct-feedback");
+    const empDirectLoginBtn = document.getElementById("emp-direct-login-btn");
+    const ownerDirectPinInput = document.getElementById("owner-direct-pin-input");
+    const ownerDirectFeedback = document.getElementById("owner-direct-feedback");
+    const ownerDirectLoginBtn = document.getElementById("owner-direct-login-btn");
+
+    const form = document.getElementById("add-employee-form");
+    const nameInput = document.getElementById("emp-name");
+    const roleSelect = document.getElementById("emp-role");
+    const deptSelect = document.getElementById("emp-dept");
+    const shiftSelect = document.getElementById("emp-shift");
+    const shiftStartTime = document.getElementById("shift-start-time");
+    const shiftEndTime = document.getElementById("shift-end-time");
+    const salaryInput = document.getElementById("emp-salary");
+    const empCustomPin = document.getElementById("emp-custom-pin");
+    const tableBody = document.getElementById("employee-table-body");
+    const staffCount = document.getElementById("staff-count");
+    const presentCount = document.getElementById("present-count");
+    const totalPendingSalary = document.getElementById("total-pending-salary");
+    const searchInput = document.getElementById("search-input");
+    const emptyState = document.getElementById("empty-state");
+    const feedback = document.getElementById("form-feedback");
+    const printBtn = document.getElementById("print-btn");
+
+    const exportCsvBtn = document.getElementById("export-csv-btn");
+    const backupBtn = document.getElementById("backup-btn");
+    const restoreBtn = document.getElementById("restore-btn");
+    const restoreFileInput = document.getElementById("restore-file-input");
+
+    const toastBanner = document.getElementById("toast-banner");
+    const toastMessage = document.getElementById("toast-message");
+    const closeToastBtn = document.getElementById("close-toast-btn");
+
+    const editEmpModal = document.getElementById("edit-emp-modal");
+    const closeEditModalBtn = document.getElementById("close-edit-modal-btn");
+    const cancelEditModalBtn = document.getElementById("cancel-edit-modal-btn");
+    const editEmpForm = document.getElementById("edit-emp-form");
+    const editEmpNameInput = document.getElementById("edit-emp-name-input");
+    const editEmpSalaryInput = document.getElementById("edit-emp-salary-input");
+    const editShiftStartInput = document.getElementById("edit-shift-start-input");
+    const editShiftEndInput = document.getElementById("edit-shift-end-input");
+
+    const ownerPinModal = document.getElementById("owner-pin-modal");
+    const closeOwnerPinModalBtn = document.getElementById("close-owner-pin-modal-btn");
+    const cancelOwnerPinBtn = document.getElementById("cancel-owner-pin-btn");
+    const changeOwnerPinForm = document.getElementById("change-owner-pin-form");
+    const newOwnerPin = document.getElementById("new-owner-pin");
+    const confirmOwnerPin = document.getElementById("confirm-owner-pin");
+    const changePinError = document.getElementById("change-pin-error");
+
+    const staffPinModal = document.getElementById("staff-pin-modal");
+    const closeStaffPinBtn = document.getElementById("close-staff-pin-btn");
+    const cancelStaffPinBtn = document.getElementById("cancel-staff-pin-btn");
+    const staffPinForm = document.getElementById("staff-pin-form");
+    const modalStaffName = document.getElementById("modal-staff-name");
+    const newStaffPin = document.getElementById("new-staff-pin");
+
+    const salesRegisterForm = document.getElementById("sales-register-form");
+    const salesCashInput = document.getElementById("sales-cash-input");
+    const salesUpiInput = document.getElementById("sales-upi-input");
+    const salesCreditInput = document.getElementById("sales-credit-input");
+    const salesExpenseInput = document.getElementById("sales-expense-input");
+    const tallyGrossSales = document.getElementById("tally-gross-sales");
+    const tallyExpectedCash = document.getElementById("tally-expected-cash");
+    const salesHistoryList = document.getElementById("sales-history-list");
+
+    const addMedicineForm = document.getElementById("add-medicine-form");
+    const medNameInput = document.getElementById("med-name-input");
+    const medRackInput = document.getElementById("med-rack-input");
+    const medBatchInput = document.getElementById("med-batch-input");
+    const medExpiryInput = document.getElementById("med-expiry-input");
+    const expiryWarningBadge = document.getElementById("expiry-warning-badge");
+    const expiredBadge = document.getElementById("expired-badge");
+    const medicineTableBody = document.getElementById("medicine-table-body");
+
+    const loginModal = document.getElementById("login-modal");
+    const closeLoginBtn = document.getElementById("close-login-btn");
+    const tabOwnerBtn = document.getElementById("tab-owner-btn");
+    const tabEmpBtn = document.getElementById("tab-emp-btn");
+    const ownerLoginForm = document.getElementById("owner-login-form");
+    const empLoginForm = document.getElementById("emp-login-form");
+    const ownerPinInput = document.getElementById("owner-pin-input");
+    const ownerLoginFeedback = document.getElementById("owner-login-feedback");
+    const empSelectLogin = document.getElementById("emp-select-login");
+    const empModalPinInput = document.getElementById("emp-modal-pin-input");
+    const empModalFeedback = document.getElementById("emp-modal-feedback");
+
+    const taskModal = document.getElementById("task-modal");
+    const closeTaskModalBtn = document.getElementById("close-task-modal-btn");
+    const cancelTaskBtn = document.getElementById("cancel-task-btn");
+    const assignTaskForm = document.getElementById("assign-task-form");
+    const taskEmpName = document.getElementById("task-emp-name");
+    const taskDescInput = document.getElementById("task-desc-input");
+    const ownerReportsList = document.getElementById("owner-reports-list");
+    const ownerLeavesList = document.getElementById("owner-leaves-list");
+    const ownerLeaveBadge = document.getElementById("owner-leave-badge");
+
+    const overtimeModal = document.getElementById("overtime-modal");
+    const closeOtModalBtn = document.getElementById("close-ot-modal-btn");
+    const cancelOtBtn = document.getElementById("cancel-ot-btn");
+    const overtimeForm = document.getElementById("overtime-form");
+    const otEmpName = document.getElementById("ot-emp-name");
+    const otHoursInput = document.getElementById("ot-hours-input");
+    const otRateInput = document.getElementById("ot-rate-input");
+
+    const empPortalName = document.getElementById("emp-portal-name");
+    const empPortalRole = document.getElementById("emp-portal-role");
+    const empPortalShift = document.getElementById("emp-portal-shift");
+    const empPortalStatus = document.getElementById("emp-portal-status");
+    const empLateBanner = document.getElementById("emp-late-banner");
+    const empLiveTimer = document.getElementById("emp-live-timer");
+    const empStartWorkBtn = document.getElementById("emp-start-work-btn");
+    const empPauseWorkBtn = document.getElementById("emp-pause-work-btn");
+    const empStopWorkBtn = document.getElementById("emp-stop-work-btn");
+    const timerLiveBadge = document.getElementById("timer-live-badge");
+    const empOvertimeBadge = document.getElementById("emp-overtime-badge");
+    const empTasksBadge = document.getElementById("emp-tasks-badge");
+    const empTasksList = document.getElementById("emp-tasks-list");
+    const empReportForm = document.getElementById("emp-report-form");
+    const empReportText = document.getElementById("emp-report-text");
+    const empPreviousReport = document.getElementById("emp-previous-report");
+    const empPreviousReportContent = document.getElementById("emp-previous-report-content");
+
+    const empLeaveForm = document.getElementById("emp-leave-form");
+    const leaveDateInput = document.getElementById("leave-date-input");
+    const leaveTypeSelect = document.getElementById("leave-type-select");
+    const leaveReasonInput = document.getElementById("leave-reason-input");
+    const empLeavesList = document.getElementById("emp-leaves-list");
+
+    const advanceModal = document.getElementById("advance-modal");
+    const modalEmpName = document.getElementById("modal-emp-name");
+    const advanceAmountInput = document.getElementById("advance-amount-input");
+    const advanceForm = document.getElementById("advance-form");
+    const closeModalBtn = document.getElementById("close-modal-btn");
+    const cancelAdvanceBtn = document.getElementById("cancel-advance-btn");
+
+    const settleModal = document.getElementById("settle-modal");
+    const settleEmpName = document.getElementById("settle-emp-name");
+    const settleEmpAmount = document.getElementById("settle-emp-amount");
+    const closeSettleBtn = document.getElementById("close-settle-btn");
+    const cancelSettleBtn = document.getElementById("cancel-settle-btn");
+    const confirmSettleBtn = document.getElementById("confirm-settle-btn");
+
+    function showToast(msg) {
+      toastMessage.textContent = msg;
+      toastBanner.classList.remove("hidden");
+      setTimeout(() => { toastBanner.classList.add("hidden"); }, 5000);
+    }
+    closeToastBtn.addEventListener("click", () => toastBanner.classList.add("hidden"));
+
+    function escapeHtml(text) {
+      const div = document.createElement("div");
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    function formatRupees(num) {
+      return "₹" + Number(num || 0).toLocaleString("en-IN");
+    }
+
+    function getEmpWorkedSeconds(emp) {
+      if (!emp) return 0;
+      let base = emp.accumulatedSeconds || emp.workedSeconds || 0;
+      if (emp.isClockedIn && emp.clockInTimestamp) {
+        const elapsed = Math.max(0, Math.floor((Date.now() - emp.clockInTimestamp) / 1000));
+        return base + elapsed;
+      }
+      return base;
+    }
+
+    function formatSeconds(secs) {
+      const s = Math.max(0, Math.floor(secs || 0));
+      const h = Math.floor(s / 3600);
+      const m = Math.floor((s % 3600) / 60);
+      const remS = s % 60;
+      return [h, m, remS].map(v => String(v).padStart(2, '0')).join(':');
+    }
+
+    function formatTime12h(timeStr) {
+      if (!timeStr) return "08:00 AM";
+      const parts = timeStr.split(':');
+      let h = parseInt(parts[0], 10);
+      const m = parts[1] || '00';
+      const ampm = h >= 12 ? 'PM' : 'AM';
+      h = h % 12 || 12;
+      return `${h}:${m} ${ampm}`;
+    }
+
+    function checkShiftLate(shiftStartTimeStr) {
+      const now = new Date();
+      const currentH = now.getHours();
+      const currentM = now.getMinutes();
+      const currentMinutesFromMidnight = currentH * 60 + currentM;
+
+      let shiftStartMin = 8 * 60;
+      if (shiftStartTimeStr && shiftStartTimeStr.includes(':')) {
+        const parts = shiftStartTimeStr.split(':');
+        shiftStartMin = parseInt(parts[0], 10) * 60 + parseInt(parts[1], 10);
+      }
+
+      const diff = currentMinutesFromMidnight - shiftStartMin;
+      if (diff > 15) return { isLate: true, lateMinutes: diff };
+      return { isLate: false, lateMinutes: 0 };
+    }
+
+    function refreshStoreBranding() {
+      const name = getStoreName();
+      headerPharmacyName.textContent = name;
+      loginPharmacyTitle.textContent = `${name} Portal`;
+      empPortalPharmacyLabel.textContent = `${name} Staff Portal`;
+    }
+
+    function updatePortalUI() {
+      refreshStoreBranding();
+      populateEmployeeDropdowns();
+
+      if (currentSession.role === null) {
+        dualLoginView.classList.remove("hidden");
+        ownerView.classList.add("hidden");
+        employeeView.classList.add("hidden");
+        changeOwnerPinNavBtn.classList.add("hidden");
+        editPharmacyNavBtn.classList.add("hidden");
+        currentPortalBadge.textContent = "🔒 Login Portal (Select User)";
+        currentPortalBadge.className = "px-2.5 py-0.5 rounded-md bg-slate-700 text-slate-300 font-bold text-xs";
+        activeUserName.textContent = "Not Logged In";
+        navLogoutText.textContent = "Login";
+
+        ownerDirectPinInput.value = "";
+        empDirectPinInput.value = "";
+        if (liveMonitorInterval) clearInterval(liveMonitorInterval);
+        return;
+      }
+
+      dualLoginView.classList.add("hidden");
+      navLogoutText.textContent = "Logout / Switch Portal";
+
+      if (currentSession.role === "owner") {
+        ownerView.classList.remove("hidden");
+        employeeView.classList.add("hidden");
+        changeOwnerPinNavBtn.classList.remove("hidden");
+        changeOwnerPinNavBtn.classList.add("inline-flex");
+        editPharmacyNavBtn.classList.remove("hidden");
+        editPharmacyNavBtn.classList.add("inline-flex");
+        currentPortalBadge.textContent = "👑 Store Owner (Admin Portal)";
+        currentPortalBadge.className = "px-2.5 py-0.5 rounded-md bg-emerald-500/20 text-emerald-300 font-bold text-xs";
+        activeUserName.textContent = "Logged in as: Administrator";
+        renderTable(searchInput ? searchInput.value : "");
+        renderOwnerReports();
+        renderOwnerLeaves();
+        renderSalesRegister();
+        renderMedicines();
+        startOwnerLiveMonitor();
+      } else {
+        ownerView.classList.add("hidden");
+        employeeView.classList.remove("hidden");
+        changeOwnerPinNavBtn.classList.add("hidden");
+        editPharmacyNavBtn.classList.add("hidden");
+        if (liveMonitorInterval) clearInterval(liveMonitorInterval);
+        const emp = employees.find(e => Number(e.id) === Number(currentSession.empId));
+        if (!emp) {
+          currentSession = { role: null, empId: null };
+          updatePortalUI();
+          return;
+        }
+
+        currentPortalBadge.textContent = `👤 Staff: ${emp.name}`;
+        currentPortalBadge.className = "px-2.5 py-0.5 rounded-md bg-indigo-500/20 text-indigo-300 font-bold text-xs";
+        activeUserName.textContent = `Staff ID: #${emp.id}`;
+
+        renderEmployeePortal(emp);
+      }
+    }
+
+    function setSession(sess) {
+      currentSession = sess;
+      try { localStorage.setItem(SESSION_KEY, JSON.stringify(currentSession)); } catch(e) {}
+      updatePortalUI();
+    }
+
+    function populateEmployeeDropdowns() {
+      empDirectLoginSelect.innerHTML = "";
+      empSelectLogin.innerHTML = "";
+
+      if (employees.length === 0) {
+        const emptyOpt1 = document.createElement("option");
+        emptyOpt1.value = "";
+        emptyOpt1.textContent = "-- No staff registered yet (Add from Owner Portal) --";
+        emptyOpt1.disabled = true;
+        emptyOpt1.selected = true;
+        empDirectLoginSelect.appendChild(emptyOpt1);
+
+        const emptyOpt2 = document.createElement("option");
+        emptyOpt2.value = "";
+        emptyOpt2.textContent = "-- No staff registered yet --";
+        emptyOpt2.disabled = true;
+        emptyOpt2.selected = true;
+        empSelectLogin.appendChild(emptyOpt2);
+        return;
+      }
+
+      employees.forEach(e => {
+        const opt1 = document.createElement("option");
+        opt1.value = e.id;
+        opt1.textContent = `${e.name} (${e.role} - ID #${e.id})`;
+        empDirectLoginSelect.appendChild(opt1);
+
+        const opt2 = document.createElement("option");
+        opt2.value = e.id;
+        opt2.textContent = `${e.name} (${e.role})`;
+        empSelectLogin.appendChild(opt2);
+      });
+    }
+
+    function startOwnerLiveMonitor() {
+      if (liveMonitorInterval) clearInterval(liveMonitorInterval);
+
+      function updateMonitor() {
+        const now = new Date();
+        liveClockDisplay.textContent = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+
+        liveStaffMonitorGrid.innerHTML = "";
+        const activeClockedInStaff = employees.filter(e => e.isClockedIn);
+        activeDutyCountBadge.textContent = `● ${activeClockedInStaff.length} Active On Floor`;
+
+        if (employees.length === 0) {
+          liveStaffMonitorGrid.innerHTML = `<div class="col-span-full py-4 text-center text-xs text-slate-400 italic">No employees added yet. Add staff below to start live tracking.</div>`;
+          return;
+        }
+
+        employees.forEach(emp => {
+          const isWorking = emp.isClockedIn;
+          const currentWorked = getEmpWorkedSeconds(emp);
+          emp.workedSeconds = currentWorked;
+          let statusBadge = "";
+          let cardBg = "bg-slate-800/80 border-slate-700";
+
+          if (isWorking) {
+            statusBadge = `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 animate-pulse">● On Duty</span>`;
+            cardBg = "bg-emerald-950/40 border-emerald-800/60";
+          } else if (emp.status === "On Leave") {
+            statusBadge = `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">🏖️ On Leave</span>`;
+          } else if (emp.isShiftCompleted) {
+            statusBadge = `<span class="px-2 py-0.5 rounded-full text-[10px] font-medium bg-slate-700 text-slate-300 border border-slate-600">⏹️ Shift Finished</span>`;
+            cardBg = "bg-slate-800/80 border-slate-700";
+          } else if (currentWorked > 0) {
+            statusBadge = `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">⏸️ On Break (Paused)</span>`;
+            cardBg = "bg-amber-950/20 border-amber-800/40";
+          } else {
+            statusBadge = `<span class="px-2 py-0.5 rounded-full text-[10px] font-medium bg-slate-800 text-slate-400">Not Clocked In</span>`;
+          }
+
+          const calc = calculateEarnedSalary(emp);
+          const card = document.createElement("div");
+          card.className = `p-3.5 rounded-2xl border ${cardBg} flex items-center justify-between text-xs transition shadow-sm`;
+          card.innerHTML = `
+            <div>
+              <div class="font-bold text-white text-sm flex items-center gap-1.5 flex-wrap">
+                <span>${escapeHtml(emp.name)}</span>
+                ${emp.isLate ? '<span class="text-[9px] bg-rose-500/20 text-rose-300 px-1.5 py-0.2 rounded border border-rose-500/40">Late</span>' : ''}
+                ${calc.todayShortHours > 0 ? `<span class="text-[9px] bg-amber-500/20 text-amber-300 px-1.5 py-0.2 rounded border border-amber-500/40 font-mono">Short -₹${calc.todayShortDeduction}</span>` : ''}
+                ${calc.totalAbsentDays > 0 ? `<span class="text-[9px] bg-rose-500/20 text-rose-300 px-1.5 py-0.2 rounded border border-rose-500/40 font-mono">Chutti -₹${calc.leaveDeduction - calc.todayShortDeduction}</span>` : ''}
+              </div>
+              <div class="text-[11px] text-slate-300 mt-0.5 flex items-center gap-1.5 flex-wrap">
+                <span>${escapeHtml(emp.role)}</span>
+                <span class="text-slate-500">•</span>
+                <span class="text-emerald-400 font-mono font-semibold">⏰ ${formatTime12h(emp.shiftStartTime)} - ${formatTime12h(emp.shiftEndTime)} (${calc.shiftHours}h Shift)</span>
+              </div>
+              <div class="text-[11px] text-slate-400 mt-1 flex items-center gap-2 flex-wrap">
+                <span>Live Earned: <strong class="text-emerald-300 font-mono font-bold">₹${calc.todayEarned}</strong></span>
+                <span class="text-slate-600">•</span>
+                <span>(₹${calc.hourlyRate}/hr)</span>
+                ${calc.todayShortHours > 0 ? `<span class="text-amber-400 font-semibold">• ${calc.todayShortHours}h short</span>` : ''}
+              </div>
+            </div>
+            <div class="text-right space-y-1.5 flex-shrink-0">
+              <div>${statusBadge}</div>
+              <div class="font-mono text-sm font-black ${isWorking ? 'text-emerald-300 tracking-wider' : 'text-slate-400'}">
+                ${formatSeconds(currentWorked)}
+              </div>
+              <div class="text-[10px] text-slate-400 font-mono">
+                ${calc.hoursWorked} / ${calc.shiftHours} hrs
+              </div>
+            </div>
+          `;
+          liveStaffMonitorGrid.appendChild(card);
+        });
+      }
+
+      updateMonitor();
+      liveMonitorInterval = setInterval(updateMonitor, 1000);
+    }
+
+    // Shift & Hourly Pro-Rata Salary Engine (Exact Deductions for Half-Day, Short Hours & Absent Days)
+    function calculateEarnedSalary(emp) {
+      const baseSalary = Number(emp.salary || emp.baseSalary || 0);
+      const totalSecs = getEmpWorkedSeconds(emp);
+      const hoursWorked = totalSecs / 3600;
+
+      // 1. Shift scheduled hours calculation from custom shift times
+      let shiftHours = 8;
+      if (emp.shiftStartTime && emp.shiftEndTime) {
+        const [sh, sm] = emp.shiftStartTime.split(":").map(Number);
+        const [eh, em] = emp.shiftEndTime.split(":").map(Number);
+        let diff = (eh * 60 + em) - (sh * 60 + sm);
+        if (diff <= 0) diff += 24 * 60; // night shift overnight wrap
+        shiftHours = Math.max(1, diff / 60);
+      }
+
+      // 2. Full Month (30 Days Base, No Fixed Weekoffs)
+      const daysInMonth = 30;
+      const dailySalaryRate = baseSalary > 0 ? (baseSalary / daysInMonth) : 0;
+      const hourlySalaryRate = shiftHours > 0 ? (dailySalaryRate / shiftHours) : 0;
+
+      // 3. Today's Earned Salary & Shortfall (Pro-Rata to the exact minute/hour)
+      // If employee worked 1 hr, 2 hrs, or half-day (4 hrs), they earn exactly worked hours * hourly rate
+      const todayEarned = Math.round(hoursWorked * hourlySalaryRate);
+
+      // Today Short Hours & Deduction (If duty finished or paused short of full shift)
+      let todayShortHours = 0;
+      let todayShortDeduction = 0;
+      if (emp.isShiftCompleted && hoursWorked < shiftHours) {
+        todayShortHours = Number((shiftHours - hoursWorked).toFixed(1));
+        todayShortDeduction = Math.round(todayShortHours * hourlySalaryRate);
+      }
+
+      // 4. Overtime calculation (Hours worked beyond scheduled shift length)
+      const otHours = Math.max(0, hoursWorked - shiftHours);
+      const otRate = Number(emp.overtimeRate || Math.round(hourlySalaryRate * 1.5) || 120);
+      const otPay = Math.round(otHours * otRate);
+
+      // 5. Leave & Absence Deductions
+      // Approved leaves count
+      const leavesList = emp.leaves || [];
+      const approvedFullLeaves = leavesList.filter(l => l.status === "Approved" && (!l.type || l.type === "Full Day")).length;
+      const approvedHalfLeaves = leavesList.filter(l => l.status === "Approved" && l.type === "Half Day").length;
+      
+      // Full day leave = 1 daily rate, Half day leave = 0.5 daily rate
+      const leaveDaysCount = approvedFullLeaves + (approvedHalfLeaves * 0.5);
+      const isAbsentToday = (emp.status === "Absent" || emp.status === "On Leave") && hoursWorked === 0;
+      const totalAbsentDays = leaveDaysCount + (isAbsentToday ? 1 : 0);
+      const fullDayDeduction = Math.round(totalAbsentDays * dailySalaryRate);
+
+      // Total deduction = Full absent days deduction + today's short hours deduction (for half day or 1-2 hrs)
+      const totalDeduction = fullDayDeduction + todayShortDeduction;
+
+      // 6. Net monthly salary due to employee (Base - Total Deductions + OT - Advances)
+      const advance = Number(emp.advance || 0);
+      const netPayableMonth = Math.max(0, baseSalary - totalDeduction + otPay - advance);
+
+      return {
+        hoursWorked: Number(hoursWorked.toFixed(2)),
+        shiftHours: Number(shiftHours.toFixed(1)),
+        hourlyRate: Math.round(hourlySalaryRate),
+        dailyRate: Math.round(dailySalaryRate),
+        todayEarned,
+        todayShortHours,
+        todayShortDeduction,
+        otHours: Number(otHours.toFixed(1)),
+        otRate,
+        otPay,
+        totalAbsentDays,
+        leaveDeduction: totalDeduction,
+        advance,
+        monthlyNetDue: netPayableMonth,
+        baseSalary
+      };
+    }
+
+    function renderTable(searchTerm = "") {
+      tableBody.innerHTML = "";
+      
+      const query = searchTerm.toLowerCase().trim();
+      const filtered = employees.filter(emp => {
+        return emp.name.toLowerCase().includes(query) ||
+               emp.role.toLowerCase().includes(query) ||
+               emp.dept.toLowerCase().includes(query) ||
+               (emp.shift && emp.shift.toLowerCase().includes(query)) ||
+               (emp.status && emp.status.toLowerCase().includes(query));
+      });
+
+      if (filtered.length === 0) {
+        emptyState.classList.remove("hidden");
+      } else {
+        emptyState.classList.add("hidden");
+      }
+
+      let grandTotalPending = 0;
+      employees.forEach(e => {
+        const calc = calculateEarnedSalary(e);
+        grandTotalPending += calc.monthlyNetDue;
+      });
+
+      filtered.forEach((emp) => {
+        const calc = calculateEarnedSalary(emp);
+        const salary = calc.baseSalary;
+        const otHours = calc.otHours;
+        const otRate = calc.otRate;
+        const otPay = calc.otPay;
+        const advance = calc.advance;
+        const balance = calc.monthlyNetDue;
+        const todayEarned = calc.todayEarned;
+
+        const tr = document.createElement("tr");
+        tr.className = "hover:bg-slate-50 transition";
+        
+        const isWorkingNow = emp.isClockedIn;
+        const totalWorked = getEmpWorkedSeconds(emp);
+        emp.workedSeconds = totalWorked;
+        const timerPill = isWorkingNow
+          ? `<span class="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full animate-pulse">● Active (${formatSeconds(totalWorked)})</span>`
+          : `<span class="text-xs text-slate-500 font-mono">${formatSeconds(totalWorked)}</span>`;
+
+        const lateBadge = emp.isLate
+          ? `<span class="inline-flex items-center gap-0.5 px-2 py-0.5 rounded text-[10px] font-bold bg-rose-50 text-rose-700 border border-rose-200">⚠️ Late (${emp.lateMinutes || '15+'}m)</span>`
+          : `<span class="text-[10px] text-emerald-600 font-medium">✓ On Time</span>`;
+
+        const taskList = emp.tasks || [];
+        const completedTasks = taskList.filter(t => t.done).length;
+        const tasksSummary = taskList.length > 0 
+          ? `<div class="text-[11px] text-slate-500">Tasks: ${completedTasks}/${taskList.length} Done</div>`
+          : `<div class="text-[11px] text-slate-400">No tasks assigned</div>`;
+
+        const pendingLeaves = (emp.leaves || []).filter(l => l.status === "Pending").length;
+        const leaveIndicator = pendingLeaves > 0
+          ? `<span class="text-[10px] bg-amber-100 text-amber-800 font-bold px-1.5 py-0.5 rounded-full">Leave Req: ${pendingLeaves}</span>`
+          : "";
+
+        const shiftDisplay = emp.shiftStartTime && emp.shiftEndTime 
+          ? `${formatTime12h(emp.shiftStartTime)} - ${formatTime12h(emp.shiftEndTime)}`
+          : (emp.shift || "08:00 AM - 04:00 PM");
+
+        const storeName = getStoreName();
+        const waText = encodeURIComponent(
+          `🏥 *${storeName} - Staff Salary Slip*\n` +
+          `👤 Employee: ${emp.name}\n` +
+          `💼 Role: ${emp.role}\n` +
+          `⏰ Scheduled Shift: ${shiftDisplay} (${calc.shiftHours} hrs)\n` +
+          `⏳ Duty Logged: ${formatSeconds(totalWorked)} (${calc.hoursWorked} hrs)\n` +
+          `💵 Hourly Rate: ₹${calc.hourlyRate}/hr (Daily: ₹${calc.dailyRate})\n` +
+          `--------------------------\n` +
+          `💰 Monthly Base Salary: ${formatRupees(salary)}\n` +
+          (calc.todayShortHours > 0 ? `⚠️ Short Duty Deduction (${calc.todayShortHours}h): -₹${calc.todayShortDeduction}\n` : '') +
+          (calc.totalAbsentDays > 0 ? `🏖️ Leave Deduction (${calc.totalAbsentDays} days): -₹${calc.leaveDeduction - calc.todayShortDeduction}\n` : '') +
+          (otHours > 0 ? `⏱️ Overtime (${otHours}h @ ₹${otRate}): +${formatRupees(otPay)}\n` : '') +
+          (advance > 0 ? `💳 Advance Deducted: -${formatRupees(advance)}\n` : '') +
+          `✅ *Net Balance Due: ${formatRupees(balance)}*\n` +
+          `--------------------------\n` +
+          `Thank you! 🙏`
+        );
+
+        tr.innerHTML = `
+          <td class="py-3 px-3">
+            <div class="font-bold text-slate-900 flex items-center gap-1.5">
+              <span>${escapeHtml(emp.name)}</span>
+              ${leaveIndicator}
+            </div>
+            <div class="text-[11px] text-slate-500 font-mono flex items-center gap-2 mt-0.5">
+              <span>ID: #${emp.id}</span>
+              <span class="text-slate-400">•</span>
+              <span class="tracking-widest">••••</span>
+              <button data-id="${emp.id}" class="edit-pin-btn text-[10px] text-indigo-600 hover:text-indigo-800 underline font-medium">Change PIN</button>
+            </div>
+          </td>
+          <td class="py-3 px-3">
+            <div class="font-medium text-xs text-slate-800">${escapeHtml(emp.role)}</div>
+            <div class="text-[11px] font-semibold text-emerald-700 mt-0.5">⏰ ${escapeHtml(shiftDisplay)}</div>
+            ${tasksSummary}
+          </td>
+          <td class="py-3 px-3">
+            <div class="text-xs font-semibold text-slate-900 flex items-center justify-between">
+              <span>Base: ${formatRupees(salary)}</span>
+              <span class="text-[10px] text-emerald-700 font-bold bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">Earned: ₹${calc.todayEarned}</span>
+            </div>
+            <div class="text-[11px] text-slate-500 mt-0.5 font-mono">Shift: ${calc.shiftHours}h (₹${calc.hourlyRate}/hr • ₹${calc.dailyRate}/day)</div>
+            ${calc.todayShortHours > 0 ? `<div class="text-[11px] text-amber-700 font-semibold bg-amber-50 px-1 rounded mt-0.5 inline-block">Short (${calc.todayShortHours}h kam): -₹${calc.todayShortDeduction}</div>` : ''}
+            ${calc.totalAbsentDays > 0 ? `<div class="text-[11px] text-rose-600 font-semibold mt-0.5">Chutti (${calc.totalAbsentDays}d): -₹${calc.leaveDeduction - calc.todayShortDeduction}</div>` : ''}
+            ${otHours > 0 ? `<div class="text-[11px] text-indigo-700 font-medium mt-0.5">OT (${otHours}h @ ₹${otRate}): +${formatRupees(otPay)}</div>` : ''}
+            ${advance > 0 ? `<div class="text-[11px] text-amber-700 font-medium">Advance: -${formatRupees(advance)}</div>` : ''}
+            <div class="text-xs font-bold text-emerald-700 mt-1 flex items-center justify-between border-t border-slate-100 pt-0.5">
+              <span>Net Due:</span>
+              <span>${formatRupees(balance)}</span>
+            </div>
+          </td>
+          <td class="py-3 px-3">
+            <div class="space-y-1">
+              <div class="flex items-center gap-1.5 flex-wrap">
+                ${timerPill}
+                ${lateBadge}
+              </div>
+              <button data-id="${emp.id}" class="attendance-btn text-[11px] font-semibold text-slate-600 hover:text-slate-900 underline block">
+                Status: ${emp.status || 'Present'}
+              </button>
+            </div>
+          </td>
+          <td class="py-3 px-3 text-right space-x-1 no-print">
+            <button data-id="${emp.id}" class="edit-emp-btn text-xs text-blue-700 hover:text-blue-900 bg-blue-50 hover:bg-blue-100 px-2 py-1 rounded-md transition font-medium" title="Edit Salary & Custom Shift Timing">
+              Edit
+            </button>
+            <button data-id="${emp.id}" class="ot-btn text-xs text-purple-700 hover:text-purple-900 bg-purple-50 hover:bg-purple-100 px-2 py-1 rounded-md transition font-medium" title="Log Overtime">
+              + OT
+            </button>
+            <button data-id="${emp.id}" class="task-btn text-xs text-indigo-700 hover:text-indigo-900 bg-indigo-50 hover:bg-indigo-100 px-2 py-1 rounded-md transition font-medium" title="Assign Task">
+              + Task
+            </button>
+            <a href="https://api.whatsapp.com/send?text=${waText}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1 text-xs text-green-700 hover:text-green-800 bg-green-50 hover:bg-green-100 px-2 py-1 rounded-md transition font-medium" title="WhatsApp Slip">
+              <span>Slip</span>
+            </a>
+            <button data-id="${emp.id}" class="advance-btn text-xs text-emerald-700 hover:text-emerald-900 bg-emerald-50 hover:bg-emerald-100 px-2 py-1 rounded-md transition font-medium">
+              + Advance
+            </button>
+            <button data-id="${emp.id}" class="settle-btn text-xs text-slate-700 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 px-2 py-1 rounded-md transition font-medium" title="Settle Full Month Salary">
+              Payout
+            </button>
+            <button data-id="${emp.id}" class="delete-btn text-xs text-rose-600 hover:text-rose-800 hover:bg-rose-50 px-2 py-1 rounded-md transition font-medium">
+              Delete
+            </button>
+          </td>
+        `;
+        tableBody.appendChild(tr);
+      });
+
+      staffCount.textContent = employees.length;
+      presentCount.textContent = employees.filter(e => e.status === "Present").length;
+      totalPendingSalary.textContent = formatRupees(grandTotalPending);
+    }
+
+    function renderSalesRegister() {
+      salesHistoryList.innerHTML = "";
+      let totalGross = 0;
+      let totalExpectedTillCash = 0;
+
+      if (salesData.length === 0) {
+        salesHistoryList.innerHTML = `<div class="text-xs text-slate-400 py-3 text-center italic">No sales entries recorded yet. Enter counter sales above.</div>`;
+        tallyGrossSales.textContent = "₹0";
+        tallyExpectedCash.textContent = "₹0";
+        return;
+      }
+
+      salesData.forEach(s => {
+        const gross = Number(s.cash || 0) + Number(s.upi || 0) + Number(s.credit || 0);
+        const expectedCash = Math.max(0, Number(s.cash || 0) - Number(s.expense || 0));
+        totalGross += gross;
+        totalExpectedTillCash += expectedCash;
+
+        const row = document.createElement("div");
+        row.className = "p-3 bg-slate-50 border border-slate-200 rounded-xl flex flex-wrap items-center justify-between gap-3 text-xs";
+        row.innerHTML = `
+          <div>
+            <span class="font-bold text-slate-900">${s.date}</span>
+            <span class="text-slate-500 ml-2">Cash: ${formatRupees(s.cash)} | UPI: ${formatRupees(s.upi)} | Udhaar: ${formatRupees(s.credit)} | Expense: -${formatRupees(s.expense)}</span>
+          </div>
+          <div class="flex items-center gap-3">
+            <span class="font-semibold text-slate-800">Gross: <strong class="text-emerald-700">${formatRupees(gross)}</strong></span>
+            <span class="font-bold text-slate-900 px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200">Till Cash: ${formatRupees(expectedCash)}</span>
+          </div>
+        `;
+        salesHistoryList.prepend(row);
+      });
+
+      tallyGrossSales.textContent = formatRupees(totalGross);
+      tallyExpectedCash.textContent = formatRupees(totalExpectedTillCash);
+    }
+
+    salesRegisterForm.addEventListener("submit", (e) => {
+      e.preventDefault();
+      const cash = parseFloat(salesCashInput.value) || 0;
+      const upi = parseFloat(salesUpiInput.value) || 0;
+      const credit = parseFloat(salesCreditInput.value) || 0;
+      const expense = parseFloat(salesExpenseInput.value) || 0;
+
+      const today = new Date().toISOString().slice(0, 10);
+      salesData.push({
+        id: Date.now(),
+        date: today,
+        cash,
+        upi,
+        credit,
+        expense
+      });
+
+      saveSales();
+      renderSalesRegister();
+      salesCashInput.value = "";
+      salesUpiInput.value = "";
+      salesCreditInput.value = "";
+      salesExpenseInput.value = "";
+      showToast("Daily cash register tally saved successfully!");
+    });
+
+    function renderMedicines() {
+      medicineTableBody.innerHTML = "";
+      const now = new Date();
+      let expiringSoonCount = 0;
+      let expiredCount = 0;
+
+      if (medicinesData.length === 0) {
+        medicineTableBody.innerHTML = `<tr><td colspan="6" class="text-center py-6 text-slate-400 italic">No medicines currently tracked for expiry. Add medicines using the form above.</td></tr>`;
+        expiryWarningBadge.textContent = "0 Expiring Soon";
+        expiredBadge.textContent = "0 Expired";
+        return;
+      }
+
+      medicinesData.forEach(med => {
+        const expDate = new Date(med.expiry);
+        const diffDays = Math.ceil((expDate - now) / (1000 * 60 * 60 * 24));
+
+        let badge = "";
+        if (diffDays < 0) {
+          expiredCount++;
+          badge = `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-100 text-rose-800 border border-rose-200">❌ Expired (${Math.abs(diffDays)}d ago)</span>`;
+        } else if (diffDays <= 60) {
+          expiringSoonCount++;
+          badge = `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-200">⚠️ Expiring in ${diffDays} days</span>`;
+        } else {
+          badge = `<span class="px-2 py-0.5 rounded text-[10px] font-medium bg-emerald-50 text-emerald-700">✓ Safe (${diffDays}d)</span>`;
+        }
+
+        const tr = document.createElement("tr");
+        tr.className = "hover:bg-slate-50 transition";
+        tr.innerHTML = `
+          <td class="py-2.5 px-3 font-semibold text-slate-900">${escapeHtml(med.name)}</td>
+          <td class="py-2.5 px-3 text-slate-600 font-mono text-[11px]">${escapeHtml(med.rack)}</td>
+          <td class="py-2.5 px-3 text-slate-500 font-mono text-[11px]">${escapeHtml(med.batch)}</td>
+          <td class="py-2.5 px-3 text-slate-700">${escapeHtml(med.expiry)}</td>
+          <td class="py-2.5 px-3">${badge}</td>
+          <td class="py-2.5 px-3 text-right">
+            <button data-med-id="${med.id}" class="delete-med-btn text-rose-600 hover:text-rose-800 font-medium">Remove</button>
+          </td>
+        `;
+        medicineTableBody.appendChild(tr);
+      });
+
+      expiryWarningBadge.textContent = `${expiringSoonCount} Expiring Soon`;
+      expiredBadge.textContent = `${expiredCount} Expired`;
+    }
+
+    addMedicineForm.addEventListener("submit", (e) => {
+      e.preventDefault();
+      const name = medNameInput.value.trim();
+      const rack = medRackInput.value.trim();
+      const batch = medBatchInput.value.trim();
+      const expiry = medExpiryInput.value;
+
+      if (!name || !expiry) return;
+
+      medicinesData.push({
+        id: Date.now(),
+        name,
+        rack,
+        batch,
+        expiry
+      });
+
+      saveMedicines();
+      renderMedicines();
+      medNameInput.value = "";
+      medRackInput.value = "";
+      medBatchInput.value = "";
+      medExpiryInput.value = "";
+      showToast(`${name} added to expiry monitoring list!`);
+    });
+
+    medicineTableBody.addEventListener("click", (e) => {
+      const btn = e.target.closest(".delete-med-btn");
+      if (btn) {
+        const id = parseInt(btn.getAttribute("data-med-id"), 10);
+        medicinesData = medicinesData.filter(m => m.id !== id);
+        saveMedicines();
+        renderMedicines();
+        showToast("Medicine removed from expiry list.");
+      }
+    });
+
+    function renderOwnerLeaves() {
+      ownerLeavesList.innerHTML = "";
+      let totalPending = 0;
+
+      const allLeaves = [];
+      employees.forEach(emp => {
+        (emp.leaves || []).forEach(l => {
+          allLeaves.push({ ...l, empId: emp.id, empName: emp.name, empRole: emp.role });
+          if (l.status === "Pending") totalPending++;
+        });
+      });
+
+      ownerLeaveBadge.textContent = `${totalPending} Pending`;
+
+      if (allLeaves.length === 0) {
+        ownerLeavesList.innerHTML = `<div class="text-xs text-slate-400 py-3 text-center italic">No leave applications currently submitted.</div>`;
+        return;
+      }
+
+      allLeaves.forEach(lv => {
+        const item = document.createElement("div");
+        item.className = "p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-2";
+        
+        let statusBadge = "";
+        if (lv.status === "Pending") {
+          statusBadge = `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-200">Pending</span>`;
+        } else if (lv.status === "Approved") {
+          statusBadge = `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">Approved</span>`;
+        } else {
+          statusBadge = `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 text-rose-800 border border-rose-200">Rejected</span>`;
+        }
+
+        const actionButtons = lv.status === "Pending" ? `
+          <div class="flex items-center gap-2 pt-1">
+            <button data-emp-id="${lv.empId}" data-leave-id="${lv.id}" class="approve-leave-btn px-2.5 py-1 rounded bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold transition">
+              ✓ Approve Leave
+            </button>
+            <button data-emp-id="${lv.empId}" data-leave-id="${lv.id}" class="reject-leave-btn px-2.5 py-1 rounded bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs font-semibold transition">
+              ✕ Reject
+            </button>
+          </div>
+        ` : '';
+
+        item.innerHTML = `
+          <div class="flex items-center justify-between">
+            <div class="font-bold text-xs text-slate-900">${escapeHtml(lv.empName)} <span class="text-slate-500 font-normal">(${escapeHtml(lv.empRole)})</span></div>
+            <div>${statusBadge}</div>
+          </div>
+          <div class="text-xs text-slate-700">
+            <strong>Date:</strong> ${escapeHtml(lv.date)} • <strong>Type:</strong> ${escapeHtml(lv.type)}
+          </div>
+          <div class="text-xs text-slate-600 bg-white p-2 rounded border border-slate-100 italic">
+            "${escapeHtml(lv.reason)}"
+          </div>
+          ${actionButtons}
+        `;
+        ownerLeavesList.appendChild(item);
+      });
+    }
+
+    ownerLeavesList.addEventListener("click", (e) => {
+      const approveBtn = e.target.closest(".approve-leave-btn");
+      if (approveBtn) {
+        const empId = parseInt(approveBtn.getAttribute("data-emp-id"), 10);
+        const leaveId = parseInt(approveBtn.getAttribute("data-leave-id"), 10);
+        const emp = employees.find(e => e.id === empId);
+        if (emp && emp.leaves) {
+          const lv = emp.leaves.find(l => l.id === leaveId);
+          if (lv) {
+            lv.status = "Approved";
+            emp.status = "On Leave";
+            saveEmployees();
+            renderTable(searchInput.value);
+            renderOwnerLeaves();
+            showToast(`Leave application approved for ${emp.name}.`);
+          }
+        }
+        return;
+      }
+
+      const rejectBtn = e.target.closest(".reject-leave-btn");
+      if (rejectBtn) {
+        const empId = parseInt(rejectBtn.getAttribute("data-emp-id"), 10);
+        const leaveId = parseInt(rejectBtn.getAttribute("data-leave-id"), 10);
+        const emp = employees.find(e => e.id === empId);
+        if (emp && emp.leaves) {
+          const lv = emp.leaves.find(l => l.id === leaveId);
+          if (lv) {
+            lv.status = "Rejected";
+            saveEmployees();
+            renderOwnerLeaves();
+            showToast(`Leave application rejected for ${emp.name}.`);
+          }
+        }
+      }
+    });
+
+    function renderOwnerReports() {
+      ownerReportsList.innerHTML = "";
+      const withReports = employees.filter(e => e.report && e.report.trim().length > 0);
+      
+      if (withReports.length === 0) {
+        ownerReportsList.innerHTML = `<div class="text-xs text-slate-400 py-3 text-center italic">No daily reports submitted by staff today.</div>`;
+        return;
+      }
+
+      withReports.forEach(emp => {
+        const item = document.createElement("div");
+        item.className = "p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-1.5";
+        item.innerHTML = `
+          <div class="flex items-center justify-between">
+            <div class="font-bold text-xs text-slate-900">${escapeHtml(emp.name)} <span class="font-normal text-slate-500">(${escapeHtml(emp.role)})</span></div>
+            <div class="text-[11px] font-mono text-emerald-700 font-semibold">Duty Time: ${formatSeconds(emp.workedSeconds)}</div>
+          </div>
+          <div class="text-xs text-slate-700 bg-white p-2.5 rounded-lg border border-slate-100 whitespace-pre-wrap">${escapeHtml(emp.report)}</div>
+        `;
+        ownerReportsList.appendChild(item);
+      });
+    }
+
+    function renderEmployeePortal(emp) {
+      if (timerInterval) clearInterval(timerInterval);
+
+      const shiftDisplay = emp.shiftStartTime && emp.shiftEndTime 
+        ? `${formatTime12h(emp.shiftStartTime)} - ${formatTime12h(emp.shiftEndTime)}`
+        : (emp.shift || "08:00 AM - 04:00 PM");
+
+      empPortalName.textContent = emp.name;
+      empPortalRole.textContent = emp.role;
+      empPortalShift.textContent = shiftDisplay;
+
+      if (emp.isLate) {
+        empLateBanner.classList.remove("hidden");
+        empLateBanner.textContent = `⚠️ Late Arrival Recorded: ${emp.lateMinutes || '15+'} minutes past scheduled shift start.`;
+      } else {
+        empLateBanner.classList.add("hidden");
+      }
+
+      if (emp.isClockedIn) {
+        empPortalStatus.textContent = "● On Duty (Clocked In)";
+        empPortalStatus.className = "text-lg font-bold text-emerald-300";
+        empStartWorkBtn.classList.add("hidden");
+        empPauseWorkBtn.classList.remove("hidden");
+        empStopWorkBtn.classList.remove("hidden");
+        timerLiveBadge.classList.remove("hidden");
+      } else {
+        if (timerInterval) clearInterval(timerInterval);
+        if (emp.isShiftCompleted) {
+          empPortalStatus.textContent = "⏹️ Duty Finished (Shift Complete)";
+          empPortalStatus.className = "text-lg font-bold text-slate-300";
+          empStartWorkBtn.classList.remove("hidden");
+          const startBtnSpan = empStartWorkBtn.querySelector("span");
+          if (startBtnSpan) startBtnSpan.textContent = "Clock In (Start Work)";
+          empPauseWorkBtn.classList.add("hidden");
+          empStopWorkBtn.classList.add("hidden");
+          timerLiveBadge.classList.add("hidden");
+        } else {
+          const hasWorked = (emp.accumulatedSeconds && emp.accumulatedSeconds > 0) || (emp.workedSeconds && emp.workedSeconds > 0);
+          empPortalStatus.textContent = hasWorked ? "⏸️ Shift Paused (Break)" : "Shift Not Started";
+          empPortalStatus.className = hasWorked ? "text-lg font-bold text-amber-300" : "text-lg font-bold text-white";
+          empStartWorkBtn.classList.remove("hidden");
+          const startBtnSpan = empStartWorkBtn.querySelector("span");
+          if (startBtnSpan) startBtnSpan.textContent = hasWorked ? "Resume Duty (Break Khatam)" : "Clock In (Start Work)";
+          empPauseWorkBtn.classList.add("hidden");
+          empStopWorkBtn.classList.remove("hidden");
+          timerLiveBadge.classList.add("hidden");
+        }
+      }
+
+      const isOvertimeActive = (emp.workedSeconds || 0) >= 28800;
+      if (isOvertimeActive && emp.isClockedIn) {
+        empOvertimeBadge.classList.remove("hidden");
+      } else {
+        empOvertimeBadge.classList.add("hidden");
+      }
+
+      const currentWorked = getEmpWorkedSeconds(emp);
+      emp.workedSeconds = currentWorked;
+      empLiveTimer.textContent = formatSeconds(currentWorked);
+      // Staff portal: salary calculations strictly hidden from staff
+
+      if (emp.isClockedIn) {
+        timerInterval = setInterval(() => {
+          const liveSecs = getEmpWorkedSeconds(emp);
+          emp.workedSeconds = liveSecs;
+          empLiveTimer.textContent = formatSeconds(liveSecs);
+
+          if (liveSecs > 28800) {
+            const extraSeconds = liveSecs - 28800;
+            emp.overtimeHours = Number((extraSeconds / 3600).toFixed(1));
+            empOvertimeBadge.classList.remove("hidden");
+          }
+        }, 1000);
+      }
+
+      renderEmployeeTasks(emp);
+      renderEmployeeLeaves(emp);
+
+      if (emp.report) {
+        empPreviousReport.classList.remove("hidden");
+        empPreviousReportContent.textContent = emp.report;
+      } else {
+        empPreviousReport.classList.add("hidden");
+      }
+    }
+
+    function renderEmployeeTasks(emp) {
+      empTasksList.innerHTML = "";
+      const tasks = emp.tasks || [];
+      const completed = tasks.filter(t => t.done).length;
+      empTasksBadge.textContent = `${completed}/${tasks.length} Done`;
+
+      if (tasks.length === 0) {
+        empTasksList.innerHTML = `<div class="text-xs text-slate-400 py-4 text-center italic">No tasks currently assigned for today.</div>`;
+        return;
+      }
+
+      tasks.forEach(t => {
+        const div = document.createElement("div");
+        div.className = `p-3 rounded-xl border flex items-start gap-3 transition ${t.done ? 'bg-slate-50 border-slate-200 opacity-60' : 'bg-white border-slate-200'}`;
+        div.innerHTML = `
+          <input type="checkbox" data-task-id="${t.id}" ${t.done ? 'checked' : ''} class="task-checkbox mt-0.5 w-4 h-4 text-emerald-600 rounded border-slate-300 focus:ring-emerald-500 cursor-pointer">
+          <span class="text-xs text-slate-800 ${t.done ? 'line-through text-slate-500' : 'font-medium'}">${escapeHtml(t.text)}</span>
+        `;
+        empTasksList.appendChild(div);
+      });
+    }
+
+    function renderEmployeeLeaves(emp) {
+      empLeavesList.innerHTML = "";
+      const leaves = emp.leaves || [];
+      if (leaves.length === 0) {
+        empLeavesList.innerHTML = `<div class="text-slate-400 italic">No recent applications submitted.</div>`;
+        return;
+      }
+
+      leaves.slice(-3).reverse().forEach(lv => {
+        let badgeColor = "text-amber-700 bg-amber-50";
+        if (lv.status === "Approved") badgeColor = "text-emerald-700 bg-emerald-50";
+        if (lv.status === "Rejected") badgeColor = "text-rose-700 bg-rose-50";
+
+        const div = document.createElement("div");
+        div.className = "p-2 bg-slate-50 rounded-lg border border-slate-200 flex items-center justify-between";
+        div.innerHTML = `
+          <div>
+            <div class="font-medium text-slate-800">${escapeHtml(lv.date)}</div>
+            <div class="text-[10px] text-slate-500">${escapeHtml(lv.type)}</div>
+          </div>
+          <span class="px-2 py-0.5 rounded text-[10px] font-bold ${badgeColor}">${escapeHtml(lv.status)}</span>
+        `;
+        empLeavesList.appendChild(div);
+      });
+    }
+
+    empLeaveForm.addEventListener("submit", (e) => {
+      e.preventDefault();
+      const date = leaveDateInput.value;
+      const type = leaveTypeSelect.value;
+      const reason = leaveReasonInput.value.trim();
+
+      const emp = employees.find(e => Number(e.id) === Number(currentSession.empId));
+      if (emp && date && reason) {
+        if (!emp.leaves) emp.leaves = [];
+        emp.leaves.push({
+          id: Date.now(),
+          date,
+          type,
+          reason,
+          status: "Pending"
+        });
+        saveEmployees();
+        leaveDateInput.value = "";
+        leaveReasonInput.value = "";
+        renderEmployeeLeaves(emp);
+        showToast("Leave application submitted to owner for review!");
+      }
+    });
+
+    empStartWorkBtn.addEventListener("click", async () => {
+      const emp = employees.find(e => Number(e.id) === Number(currentSession.empId));
+      if (!emp) return;
+
+      const isResuming = (emp.accumulatedSeconds && emp.accumulatedSeconds > 0) || (emp.workedSeconds && emp.workedSeconds > 0);
+      emp.isClockedIn = true;
+      emp.status = "Present";
+      emp.isShiftCompleted = false;
+      emp.clockInTimestamp = Date.now();
+      emp.accumulatedSeconds = emp.accumulatedSeconds || emp.workedSeconds || 0;
+
+      const now = new Date();
+      if (!emp.clockInTime) {
+        emp.clockInTime = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        const lateCheck = checkShiftLate(emp.shiftStartTime || "09:30");
+        emp.isLate = lateCheck.isLate;
+        emp.lateMinutes = lateCheck.lateMinutes;
+      }
+
+      saveEmployees();
+      renderEmployeePortal(emp);
+
+      if (isResuming) {
+        showToast("Break khatam! Duty resumed, live timer ticking...");
+      } else if (emp.isLate) {
+        showToast(`Notice: Clocked in ${emp.lateMinutes} mins late.`);
+      } else {
+        showToast("Shift started on time! Live sync active.");
+      }
+
+      await pushToCloud(false);
+    });
+
+    empPauseWorkBtn.addEventListener("click", async () => {
+      const emp = employees.find(e => Number(e.id) === Number(currentSession.empId));
+      if (!emp) return;
+
+      if (timerInterval) clearInterval(timerInterval);
+
+      if (emp.clockInTimestamp) {
+        const elapsed = Math.max(0, Math.floor((Date.now() - emp.clockInTimestamp) / 1000));
+        emp.accumulatedSeconds = (emp.accumulatedSeconds || 0) + elapsed;
+      }
+      emp.workedSeconds = emp.accumulatedSeconds || 0;
+      emp.isClockedIn = false;
+      emp.clockInTimestamp = null;
+      emp.isShiftCompleted = false; // explicitly paused, not finished
+
+      saveEmployees();
+      renderEmployeePortal(emp);
+      showToast("Duty timer paused for break. Syncing with PC...");
+
+      await pushToCloud(false);
+    });
+
+    empStopWorkBtn.addEventListener("click", async () => {
+      const emp = employees.find(e => Number(e.id) === Number(currentSession.empId));
+      if (!emp) return;
+
+      if (emp.clockInTimestamp) {
+        const elapsed = Math.max(0, Math.floor((Date.now() - emp.clockInTimestamp) / 1000));
+        emp.accumulatedSeconds = (emp.accumulatedSeconds || 0) + elapsed;
+      }
+      emp.workedSeconds = emp.accumulatedSeconds || 0;
+      emp.isClockedIn = false;
+      emp.clockInTimestamp = null;
+      emp.isShiftCompleted = true; // Mark shift as explicitly completed, not paused
+
+      saveEmployees();
+
+      const timeWorked = formatSeconds(emp.workedSeconds);
+      showToast(`Duty finished! Total time: ${timeWorked}. Logging out...`);
+
+      await pushToCloud(false);
+
+      setTimeout(() => {
+        setSession({ role: null, empId: null });
+      }, 1200);
+    });
+
+    empTasksList.addEventListener("change", (e) => {
+      if (e.target.classList.contains("task-checkbox")) {
+        const taskId = parseInt(e.target.getAttribute("data-task-id"), 10);
+        const emp = employees.find(emp => emp.id === currentSession.empId);
+        if (emp && emp.tasks) {
+          const task = emp.tasks.find(t => t.id === taskId);
+          if (task) {
+            task.done = e.target.checked;
+            saveEmployees();
+            renderEmployeeTasks(emp);
+            showToast(task.done ? "Task marked as completed!" : "Task marked as pending.");
+          }
+        }
+      }
+    });
+
+    empReportForm.addEventListener("submit", (e) => {
+      e.preventDefault();
+      const text = empReportText.value.trim();
+      const emp = employees.find(emp => emp.id === currentSession.empId);
+      if (emp && text) {
+        emp.report = text;
+        saveEmployees();
+        empReportText.value = "";
+        showToast("Daily report successfully submitted to store owner!");
+        renderEmployeePortal(emp);
+      }
+    });
+
+    switchAccountBtn.addEventListener("click", async () => {
+      // If currently an employee is logged in, cleanly finalize their duty
+      if (currentSession.role === "employee" && currentSession.empId) {
+        if (timerInterval) clearInterval(timerInterval);
+        const currentEmp = employees.find(e => Number(e.id) === Number(currentSession.empId));
+        if (currentEmp) {
+          if (currentEmp.isClockedIn && currentEmp.clockInTimestamp) {
+            const elapsed = Math.max(0, Math.floor((Date.now() - currentEmp.clockInTimestamp) / 1000));
+            currentEmp.accumulatedSeconds = (currentEmp.accumulatedSeconds || 0) + elapsed;
+          }
+          currentEmp.workedSeconds = currentEmp.accumulatedSeconds || 0;
+          currentEmp.isClockedIn = false;
+          currentEmp.clockInTimestamp = null;
+          currentEmp.isShiftCompleted = true; // Duty is completely finished and logged out
+          saveEmployees();
+          await pushToCloud(false);
+          showToast(`Duty finished for ${currentEmp.name}! Total time: ${formatSeconds(currentEmp.workedSeconds)}. Logged out.`);
+        } else {
+          showToast("Successfully logged out.");
+        }
+      } else {
+        showToast("Successfully logged out. Please choose a portal.");
+      }
+
+      setSession({ role: null, empId: null });
+    });
+
+    function openPharmacyNameModal() {
+      pharmacyNameInput.value = getStoreName();
+      pharmacyNameModal.classList.remove("hidden");
+      pharmacyNameInput.focus();
+    }
+
+    editPharmacyNameBtn.addEventListener("click", openPharmacyNameModal);
+    editPharmacyNavBtn.addEventListener("click", openPharmacyNameModal);
+    closePharmacyModalBtn.addEventListener("click", () => pharmacyNameModal.classList.add("hidden"));
+    cancelPharmacyModalBtn.addEventListener("click", () => pharmacyNameModal.classList.add("hidden"));
+
+    pharmacyNameForm.addEventListener("submit", (e) => {
+      e.preventDefault();
+      const name = pharmacyNameInput.value.trim();
+      if (name) {
+        setStoreName(name);
+        refreshStoreBranding();
+        pharmacyNameModal.classList.add("hidden");
+        showToast(`Store branding updated to "${name}"!`);
+      }
+    });
+
+    changeOwnerPinNavBtn.addEventListener("click", () => {
+      newOwnerPin.value = "";
+      confirmOwnerPin.value = "";
+      changePinError.classList.add("hidden");
+      ownerPinModal.classList.remove("hidden");
+      newOwnerPin.focus();
+    });
+
+    closeOwnerPinModalBtn.addEventListener("click", () => ownerPinModal.classList.add("hidden"));
+    cancelOwnerPinBtn.addEventListener("click", () => ownerPinModal.classList.add("hidden"));
+
+    changeOwnerPinForm.addEventListener("submit", (e) => {
+      e.preventDefault();
+      const p1 = newOwnerPin.value.trim();
+      const p2 = confirmOwnerPin.value.trim();
+
+      if (p1.length < 4) {
+        changePinError.textContent = "PIN must be at least 4 digits.";
+        changePinError.classList.remove("hidden");
+        return;
+      }
+      if (p1 !== p2) {
+        changePinError.textContent = "PINs do not match! Please re-type carefully.";
+        changePinError.classList.remove("hidden");
+        return;
+      }
+
+      setOwnerMasterPin(p1);
+      changePinError.classList.add("hidden");
+      ownerPinModal.classList.add("hidden");
+      showToast("Owner Master PIN updated successfully!");
+    });
+
+    closeStaffPinBtn.addEventListener("click", () => staffPinModal.classList.add("hidden"));
+    cancelStaffPinBtn.addEventListener("click", () => staffPinModal.classList.add("hidden"));
+
+    staffPinForm.addEventListener("submit", (e) => {
+      e.preventDefault();
+      const pin = newStaffPin.value.trim();
+      if (selectedEmployeeForPin && pin.length >= 4) {
+        selectedEmployeeForPin.pin = pin;
+        saveEmployees();
+        renderTable(searchInput.value);
+        staffPinModal.classList.add("hidden");
+        showToast(`Security PIN updated for ${selectedEmployeeForPin.name}!`);
+        selectedEmployeeForPin = null;
+      }
+    });
+
+    closeEditModalBtn.addEventListener("click", () => editEmpModal.classList.add("hidden"));
+    cancelEditModalBtn.addEventListener("click", () => editEmpModal.classList.add("hidden"));
+
+    editEmpForm.addEventListener("submit", (e) => {
+      e.preventDefault();
+      if (!selectedEmployeeForEdit) return;
+
+      const newName = editEmpNameInput.value.trim();
+      const newSalary = parseFloat(editEmpSalaryInput.value) || 0;
+      const newStart = editShiftStartInput.value;
+      const newEnd = editShiftEndInput.value;
+
+      if (newName) selectedEmployeeForEdit.name = newName;
+      selectedEmployeeForEdit.salary = newSalary;
+      selectedEmployeeForEdit.shiftStartTime = newStart;
+      selectedEmployeeForEdit.shiftEndTime = newEnd;
+      selectedEmployeeForEdit.shift = `${formatTime12h(newStart)} - ${formatTime12h(newEnd)}`;
+
+      saveEmployees();
+      renderTable(searchInput.value);
+      populateEmployeeDropdowns();
+      editEmpModal.classList.add("hidden");
+      showToast(`Updated salary (₹${newSalary}) & custom shift (${selectedEmployeeForEdit.shift}) for ${selectedEmployeeForEdit.name}!`);
+      selectedEmployeeForEdit = null;
+    });
+
+    empDirectLoginBtn.addEventListener("click", () => {
+      if (employees.length === 0) {
+        showToast("No employees registered yet. Please log into the Owner Portal to add staff.");
+        return;
+      }
+
+      const empId = parseInt(empDirectLoginSelect.value, 10);
+      const enteredPin = empDirectPinInput.value.trim();
+      const emp = employees.find(e => e.id === empId);
+
+      if (!emp) return;
+
+      const validPin = emp.pin || "";
+      if (enteredPin === validPin && enteredPin.length > 0) {
+        empDirectFeedback.classList.add("hidden");
+        empDirectPinInput.value = "";
+        setSession({ role: "employee", empId });
+        showToast(`Welcome, ${emp.name}! Staff workspace active.`);
+      } else {
+        empDirectFeedback.textContent = "Invalid PIN! Please enter your confidential passcode.";
+        empDirectFeedback.classList.remove("hidden");
+      }
+    });
+
+    ownerDirectLoginBtn.addEventListener("click", () => {
+      const enteredPin = ownerDirectPinInput.value.trim();
+      const currentMasterPin = getOwnerMasterPin();
+
+      if (currentMasterPin === "") {
+        if (enteredPin.length < 4) {
+          ownerDirectFeedback.textContent = "Please set a master PIN of at least 4 digits.";
+          ownerDirectFeedback.classList.remove("hidden");
+          return;
+        }
+        setOwnerMasterPin(enteredPin);
+        ownerDirectFeedback.classList.add("hidden");
+        ownerDirectPinInput.value = "";
+        setSession({ role: "owner", empId: null });
+        showToast(`Master PIN successfully created! Welcome to Owner Dashboard.`);
+        return;
+      }
+
+      if (enteredPin === currentMasterPin) {
+        ownerDirectFeedback.classList.add("hidden");
+        ownerDirectPinInput.value = "";
+        setSession({ role: "owner", empId: null });
+        showToast("👑 Welcome to Store Owner Dashboard!");
+      } else {
+        ownerDirectFeedback.textContent = "Invalid PIN! Please enter your secret master PIN.";
+        ownerDirectFeedback.classList.remove("hidden");
+      }
+    });
+
+    closeLoginBtn.addEventListener("click", () => loginModal.classList.add("hidden"));
+
+    tabOwnerBtn.addEventListener("click", () => {
+      tabOwnerBtn.className = "py-2.5 rounded-lg bg-white text-slate-900 shadow-sm transition";
+      tabEmpBtn.className = "py-2.5 rounded-lg text-slate-600 hover:text-slate-900 transition";
+      ownerLoginForm.classList.remove("hidden");
+      empLoginForm.classList.add("hidden");
+    });
+
+    tabEmpBtn.addEventListener("click", () => {
+      tabEmpBtn.className = "py-2.5 rounded-lg bg-white text-slate-900 shadow-sm transition";
+      tabOwnerBtn.className = "py-2.5 rounded-lg text-slate-600 hover:text-slate-900 transition";
+      empLoginForm.classList.remove("hidden");
+      ownerLoginForm.classList.add("hidden");
+    });
+
+    ownerLoginForm.addEventListener("submit", (e) => {
+      e.preventDefault();
+      const enteredPin = ownerPinInput.value.trim();
+      const currentMasterPin = getOwnerMasterPin();
+
+      if (currentMasterPin === "" || enteredPin === currentMasterPin) {
+        if (currentMasterPin === "" && enteredPin.length >= 4) setOwnerMasterPin(enteredPin);
+        ownerPinInput.value = "";
+        setSession({ role: "owner", empId: null });
+        loginModal.classList.add("hidden");
+        showToast("👑 Management login successful!");
+      } else {
+        ownerLoginFeedback.textContent = "Invalid security PIN!";
+        ownerLoginFeedback.classList.remove("hidden");
+      }
+    });
+
+    empLoginForm.addEventListener("submit", (e) => {
+      e.preventDefault();
+      if (employees.length === 0) {
+        showToast("No staff registered yet.");
+        return;
+      }
+      const empId = parseInt(empSelectLogin.value, 10);
+      const enteredPin = empModalPinInput ? empModalPinInput.value.trim() : "";
+      const emp = employees.find(e => e.id === empId);
+
+      if (emp) {
+        const validPin = emp.pin || "";
+        if (enteredPin === validPin && enteredPin.length > 0) {
+          if (empModalFeedback) empModalFeedback.classList.add("hidden");
+          if (empModalPinInput) empModalPinInput.value = "";
+          setSession({ role: "employee", empId });
+          loginModal.classList.add("hidden");
+          showToast(`Staff portal active for ${emp.name}.`);
+        } else {
+          if (empModalFeedback) {
+            empModalFeedback.textContent = "Invalid PIN!";
+            empModalFeedback.classList.remove("hidden");
+          }
+        }
+      }
+    });
+
+    tableBody.addEventListener("click", (e) => {
+      const editEmpBtn = e.target.closest(".edit-emp-btn");
+      if (editEmpBtn) {
+        const id = parseInt(editEmpBtn.getAttribute("data-id"), 10);
+        selectedEmployeeForEdit = employees.find(emp => emp.id === id);
+        if (selectedEmployeeForEdit) {
+          editEmpNameInput.value = selectedEmployeeForEdit.name;
+          editEmpSalaryInput.value = selectedEmployeeForEdit.salary || 0;
+          editShiftStartInput.value = selectedEmployeeForEdit.shiftStartTime || "09:30";
+          editShiftEndInput.value = selectedEmployeeForEdit.shiftEndTime || "20:30";
+          editEmpModal.classList.remove("hidden");
+          editEmpSalaryInput.focus();
+        }
+        return;
+      }
+
+      const editPinBtn = e.target.closest(".edit-pin-btn");
+      if (editPinBtn) {
+        const id = parseInt(editPinBtn.getAttribute("data-id"), 10);
+        selectedEmployeeForPin = employees.find(emp => emp.id === id);
+        if (selectedEmployeeForPin) {
+          modalStaffName.textContent = selectedEmployeeForPin.name;
+          newStaffPin.value = "";
+          staffPinModal.classList.remove("hidden");
+          newStaffPin.focus();
+        }
+        return;
+      }
+
+      const otBtn = e.target.closest(".ot-btn");
+      if (otBtn) {
+        const id = parseInt(otBtn.getAttribute("data-id"), 10);
+        selectedEmployeeForOT = employees.find(emp => emp.id === id);
+        if (selectedEmployeeForOT) {
+          otEmpName.textContent = selectedEmployeeForOT.name + " (Current OT: " + (selectedEmployeeForOT.overtimeHours || 0) + " hrs)";
+          otHoursInput.value = "";
+          otRateInput.value = selectedEmployeeForOT.overtimeRate || 100;
+          overtimeModal.classList.remove("hidden");
+          otHoursInput.focus();
+        }
+        return;
+      }
+
+      const taskBtn = e.target.closest(".task-btn");
+      if (taskBtn) {
+        const id = parseInt(taskBtn.getAttribute("data-id"), 10);
+        selectedEmployeeForTask = employees.find(emp => emp.id === id);
+        if (selectedEmployeeForTask) {
+          taskEmpName.textContent = selectedEmployeeForTask.name;
+          taskDescInput.value = "";
+          taskModal.classList.remove("hidden");
+          taskDescInput.focus();
+        }
+        return;
+      }
+
+      const advBtn = e.target.closest(".advance-btn");
+      if (advBtn) {
+        const idForAdv = parseInt(advBtn.getAttribute("data-id"), 10);
+        selectedEmployeeForAdvance = employees.find(emp => emp.id === idForAdv);
+        if (selectedEmployeeForAdvance) {
+          modalEmpName.textContent = selectedEmployeeForAdvance.name + " (Current Advance: " + formatRupees(selectedEmployeeForAdvance.advance) + ")";
+          advanceAmountInput.value = "";
+          advanceModal.classList.remove("hidden");
+          advanceAmountInput.focus();
+        }
+        return;
+      }
+
+      const settleBtn = e.target.closest(".settle-btn");
+      if (settleBtn) {
+        const idForSettle = parseInt(settleBtn.getAttribute("data-id"), 10);
+        selectedEmployeeForSettle = employees.find(emp => emp.id === idForSettle);
+        if (selectedEmployeeForSettle) {
+          const salary = Number(selectedEmployeeForSettle.salary || 0);
+          const otPay = Number((selectedEmployeeForSettle.overtimeHours || 0) * (selectedEmployeeForSettle.overtimeRate || 100));
+          const advance = Number(selectedEmployeeForSettle.advance || 0);
+          const balance = Math.max(0, salary + otPay - advance);
+
+          settleEmpName.textContent = selectedEmployeeForSettle.name;
+          settleEmpAmount.textContent = formatRupees(balance);
+          settleModal.classList.remove("hidden");
+        }
+        return;
+      }
+
+      const attBtn = e.target.closest(".attendance-btn");
+      if (attBtn) {
+        const idToToggle = parseInt(attBtn.getAttribute("data-id"), 10);
+        const targetEmp = employees.find(emp => emp.id === idToToggle);
+        if (targetEmp) {
+          targetEmp.status = targetEmp.status === "Present" ? "Absent" : "Present";
+          saveEmployees();
+          renderTable(searchInput.value);
+        }
+        return;
+      }
+
+      const deleteBtn = e.target.closest(".delete-btn");
+      if (deleteBtn) {
+        const idToDelete = parseInt(deleteBtn.getAttribute("data-id"), 10);
+        const emp = employees.find(e => e.id === idToDelete);
+        const name = emp ? emp.name : "";
+        employees = employees.filter(emp => emp.id !== idToDelete);
+        saveEmployees();
+        renderTable(searchInput.value);
+        populateEmployeeDropdowns();
+        if (name) showToast(`${name} was permanently removed.`);
+        return;
+      }
+    });
+
+    overtimeForm.addEventListener("submit", (e) => {
+      e.preventDefault();
+      const hours = parseFloat(otHoursInput.value) || 0;
+      const rate = parseFloat(otRateInput.value) || 100;
+      if (selectedEmployeeForOT && hours > 0) {
+        selectedEmployeeForOT.overtimeHours = (selectedEmployeeForOT.overtimeHours || 0) + hours;
+        selectedEmployeeForOT.overtimeRate = rate;
+        saveEmployees();
+        renderTable(searchInput.value);
+        showToast(`${hours} hours overtime (+${formatRupees(hours * rate)}) logged for ${selectedEmployeeForOT.name}!`);
+      }
+      overtimeModal.classList.add("hidden");
+      selectedEmployeeForOT = null;
+    });
+
+    function closeOtModal() {
+      overtimeModal.classList.add("hidden");
+      selectedEmployeeForOT = null;
+    }
+    closeOtModalBtn.addEventListener("click", closeOtModal);
+    cancelOtBtn.addEventListener("click", closeOtModal);
+
+    assignTaskForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const desc = taskDescInput.value.trim();
+      if (selectedEmployeeForTask && desc) {
+        if (!selectedEmployeeForTask.tasks) selectedEmployeeForTask.tasks = [];
+        selectedEmployeeForTask.tasks.push({
+          id: Date.now(),
+          text: desc,
+          done: false
+        });
+        saveEmployees();
+        renderTable(searchInput.value);
+        taskModal.classList.add("hidden");
+        const assignedName = selectedEmployeeForTask.name;
+        selectedEmployeeForTask = null;
+        showToast(`Task assigned! Sending live to ${assignedName}'s phone...`);
+        // Force immediate cloud broadcast
+        await pushToCloud(false);
+        showToast(`Task delivered to ${assignedName}'s mobile!`);
+        return;
+      }
+      taskModal.classList.add("hidden");
+      selectedEmployeeForTask = null;
+    });
+
+    function closeTaskModal() {
+      taskModal.classList.add("hidden");
+      selectedEmployeeForTask = null;
+    }
+    closeTaskModalBtn.addEventListener("click", closeTaskModal);
+    cancelTaskBtn.addEventListener("click", closeTaskModal);
+
+    advanceForm.addEventListener("submit", (e) => {
+      e.preventDefault();
+      const amount = parseFloat(advanceAmountInput.value) || 0;
+      if (selectedEmployeeForAdvance && amount > 0) {
+        selectedEmployeeForAdvance.advance = (selectedEmployeeForAdvance.advance || 0) + amount;
+        saveEmployees();
+        renderTable(searchInput.value);
+        showToast(`${formatRupees(amount)} advance recorded for ${selectedEmployeeForAdvance.name}!`);
+      }
+      advanceModal.classList.add("hidden");
+      selectedEmployeeForAdvance = null;
+    });
+
+    function closeAdvanceModal() {
+      advanceModal.classList.add("hidden");
+      selectedEmployeeForAdvance = null;
+    }
+    closeModalBtn.addEventListener("click", closeAdvanceModal);
+    cancelAdvanceBtn.addEventListener("click", closeAdvanceModal);
+
+    function closeSettleModal() {
+      settleModal.classList.add("hidden");
+      selectedEmployeeForSettle = null;
+    }
+    closeSettleBtn.addEventListener("click", closeSettleModal);
+    cancelSettleBtn.addEventListener("click", closeSettleModal);
+
+    confirmSettleBtn.addEventListener("click", () => {
+      if (selectedEmployeeForSettle) {
+        const empName = selectedEmployeeForSettle.name;
+        selectedEmployeeForSettle.advance = 0;
+        selectedEmployeeForSettle.overtimeHours = 0;
+        saveEmployees();
+        renderTable(searchInput.value);
+        showToast(`Full salary & overtime settled for ${empName}. New billing month started.`);
+      }
+      closeSettleModal();
+    });
+
+    // Add Employee Form Submit with Custom Shift Timings
+    form.addEventListener("submit", (e) => {
+      e.preventDefault();
+
+      const name = nameInput.value.trim();
+      const role = roleSelect.value;
+      const dept = deptSelect.value;
+      const salary = parseFloat(salaryInput.value) || 0;
+      const pin = empCustomPin.value.trim();
+      const startTime = shiftStartTime.value || "09:30";
+      const endTime = shiftEndTime.value || "20:30";
+      const label = (shiftSelect.value || "").trim();
+      const shiftSchedule = label ? `${formatTime12h(startTime)} - ${formatTime12h(endTime)} (${label})` : `${formatTime12h(startTime)} - ${formatTime12h(endTime)}`;
+
+      if (!name) {
+        feedback.textContent = "Please enter full name.";
+        feedback.classList.remove("hidden");
+        return;
+      }
+      if (pin.length < 4) {
+        feedback.textContent = "Please assign a 4 to 8 digit secret PIN for this employee.";
+        feedback.classList.remove("hidden");
+        return;
+      }
+
+      feedback.classList.add("hidden");
+
+      const newId = employees.length > 0 ? Math.max(...employees.map(e => e.id || 0)) + 1 : 1;
+
+      employees.push({
+        id: newId,
+        name,
+        pin,
+        role,
+        dept,
+        shift: shiftSchedule,
+        shiftStartTime: startTime,
+        shiftEndTime: endTime,
+        salary,
+        advance: 0,
+        status: "Present",
+        workedSeconds: 0,
+        isClockedIn: false,
+        clockInTime: null,
+        isLate: false,
+        lateMinutes: 0,
+        overtimeHours: 0,
+        overtimeRate: 100,
+        tasks: [],
+        report: "",
+        leaves: []
+      });
+
+      saveEmployees();
+      searchInput.value = "";
+      renderTable();
+      populateEmployeeDropdowns();
+
+      nameInput.value = "";
+      salaryInput.value = "";
+      empCustomPin.value = "";
+      nameInput.focus();
+
+      showToast(`Employee ${name} registered with shift ${shiftSchedule}!`);
+    });
+
+    // Data Export Handlers
+    exportCsvBtn.addEventListener("click", () => {
+      const storeName = getStoreName();
+      const headers = ["ID", "Name", "Role", "Department", "Shift Timing", "Shift Start", "Shift End", "Monthly Salary", "Overtime Hours", "Overtime Pay", "Advance Deducted", "Net Balance Due", "Duty Seconds", "Late Status", "Attendance"];
+      const rows = employees.map(e => {
+        const otH = e.overtimeHours || 0;
+        const otP = otH * (e.overtimeRate || 100);
+        return [
+          e.id,
+          `"${(e.name || "").replace(/"/g, '""')}"`,
+          `"${(e.role || "").replace(/"/g, '""')}"`,
+          `"${(e.dept || "").replace(/"/g, '""')}"`,
+          `"${(e.shift || "").replace(/"/g, '""')}"`,
+          `"${e.shiftStartTime || '09:30'}"`,
+          `"${e.shiftEndTime || '20:30'}"`,
+          e.salary || 0,
+          otH,
+          otP,
+          e.advance || 0,
+          Math.max(0, (e.salary || 0) + otP - (e.advance || 0)),
+          e.workedSeconds || 0,
+          e.isLate ? `Late (${e.lateMinutes || 0}m)` : "On Time",
+          e.status || "Present"
+        ];
+      });
+
+      const csvContent = "\uFEFF" + [`Store: ${storeName}`, headers.join(","), ...rows.map(r => r.join(","))].join("\n");
+      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${storeName.replace(/\s+/g, '_')}_Staff_Report_${new Date().toISOString().slice(0, 10)}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+      showToast("Excel (CSV) spreadsheet exported successfully!");
+    });
+
+    backupBtn.addEventListener("click", () => {
+      const storeName = getStoreName();
+      const backupData = {
+        storeName,
+        employees,
+        sales: salesData,
+        medicines: medicinesData,
+        backupDate: new Date().toISOString()
+      };
+      const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${storeName.replace(/\s+/g, '_')}_backup_${new Date().toISOString().slice(0, 10)}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+      showToast("Complete database backup saved safely!");
+    });
+
+    restoreBtn.addEventListener("click", () => restoreFileInput.click());
+
+    restoreFileInput.addEventListener("change", (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        try {
+          const parsed = JSON.parse(event.target.result);
+          if (parsed.storeName) setStoreName(parsed.storeName);
+          if (parsed.employees && Array.isArray(parsed.employees)) {
+            employees = parsed.employees;
+            if (parsed.sales) salesData = parsed.sales;
+            if (parsed.medicines) medicinesData = parsed.medicines;
+          } else if (Array.isArray(parsed)) {
+            employees = parsed;
+          }
+          saveEmployees();
+          saveSales();
+          saveMedicines();
+          refreshStoreBranding();
+          renderTable();
+          renderSalesRegister();
+          renderMedicines();
+          populateEmployeeDropdowns();
+          showToast("Complete database restored successfully from backup!");
+        } catch (err) {
+          showToast("Error reading the backup file.");
+        }
+      };
+      reader.readAsText(file);
+      restoreFileInput.value = "";
+    });
+
+    searchInput.addEventListener("input", (e) => {
+      renderTable(e.target.value);
+    });
+
+    printBtn.addEventListener("click", () => window.print());
+
+    // ==========================================
+    // MULTI-DEVICE CLOUD SYNC & PAIRING ENGINE
+    // ==========================================
+    const cloudSyncNavBtn = document.getElementById("cloud-sync-nav-btn");
+    const cloudSyncNavDot = document.getElementById("cloud-sync-nav-dot");
+    const cloudSyncNavText = document.getElementById("cloud-sync-nav-text");
+    const openCloudSyncBtn = document.getElementById("open-cloud-sync-btn");
+    const quickSyncBtn = document.getElementById("quick-sync-btn");
+    const quickSyncSpinner = document.getElementById("quick-sync-spinner");
+    const quickSyncLabel = document.getElementById("quick-sync-label");
+    const loginCloudSyncBtn = document.getElementById("login-cloud-sync-btn");
+
+    const cloudSyncModal = document.getElementById("cloud-sync-modal");
+    const closeCloudSyncModalBtn = document.getElementById("close-cloud-sync-modal-btn");
+    const modalSyncIndicator = document.getElementById("modal-sync-indicator");
+    const modalSyncStatusLabel = document.getElementById("modal-sync-status-label");
+    const modalLastSyncTime = document.getElementById("modal-last-sync-time");
+    const modalSyncIdDisplay = document.getElementById("modal-sync-id-display");
+    const cloudSyncKeyInput = document.getElementById("cloud-sync-key-input");
+    const connectCloudBtn = document.getElementById("connect-cloud-btn");
+    const disconnectCloudBtn = document.getElementById("disconnect-cloud-btn");
+    const shareWhatsappBtn = document.getElementById("share-whatsapp-btn");
+    const copyMobileLinkBtn = document.getElementById("copy-mobile-link-btn");
+    const syncQrcodeContainer = document.getElementById("sync-qrcode-container");
+    const copySyncCodeBtn = document.getElementById("copy-sync-code-btn");
+    const pasteSyncCodeInput = document.getElementById("paste-sync-code-input");
+    const loadSyncCodeBtn = document.getElementById("load-sync-code-btn");
+    const autoSyncToggle = document.getElementById("auto-sync-toggle");
+    const syncNowModalBtn = document.getElementById("sync-now-modal-btn");
+    const downloadAppFileBtn = document.getElementById("download-app-file-btn");
+    const pasteClipboardSyncBtn = document.getElementById("paste-clipboard-sync-btn");
+
+    let isSyncInProgress = false;
+    let autoSyncPushTimeout = null;
+
+    function getActiveSyncTopic() {
+      // Guaranteed single unified channel for pharmacy counter & mobile owner
+      const custom = getSyncKey();
+      if (custom && custom.trim().length > 0 && custom !== "LUCKNOW_PHARMACY_LIVE" && !custom.startsWith("pharma_hub_")) {
+        return "pharma_store_" + custom.trim().toLowerCase().replace(/[^a-z0-9_-]/g, "_");
+      }
+      return "lucknow_medicos_live_counter_786";
+    }
+
+    function getFullDatabaseSnapshot() {
+      return {
+        storeName: getStoreName(),
+        ownerPin: getOwnerMasterPin(),
+        syncTopic: getActiveSyncTopic(),
+        employees: employees,
+        sales: salesData,
+        medicines: medicinesData,
+        updatedAt: Date.now(),
+        deviceId: getDeviceId(),
+        version: "v3.5"
+      };
+    }
+
+    function applyFullDatabaseSnapshot(data, source = "Cloud") {
+      if (!data || typeof data !== "object") return false;
+      try {
+        if (data.storeName && typeof data.storeName === "string" && data.storeName.trim().length > 0) {
+          setStoreNameInternal(data.storeName.trim());
+          const h = document.getElementById("header-pharmacy-name");
+          if (h) h.textContent = data.storeName.trim();
+          const l = document.getElementById("login-pharmacy-title");
+          if (l) l.textContent = data.storeName.trim();
+        }
+        if (typeof data.ownerPin === "string") {
+          setOwnerMasterPinInternal(data.ownerPin.trim());
+        }
+        if (data.syncKey && typeof data.syncKey === "string") {
+          setSyncKey(data.syncKey);
+        }
+        if (Array.isArray(data.employees)) {
+          employees = data.employees;
+          saveEmployeesInternal();
+        }
+        if (Array.isArray(data.sales)) {
+          salesData = data.sales;
+          saveSalesInternal();
+        }
+        if (Array.isArray(data.medicines)) {
+          medicinesData = data.medicines;
+          saveMedicinesInternal();
+        }
+        if (data.updatedAt) {
+          setLastSyncTime(data.updatedAt);
+        } else {
+          setLastSyncTime(Date.now());
+        }
+
+        updatePortalUI();
+        updateSyncStatusUI();
+        return true;
+      } catch(err) {
+        console.error("Error applying snapshot:", err);
+        return false;
+      }
+    }
+
+    function setSyncSpinning(spinning) {
+      if (spinning) {
+        quickSyncSpinner.classList.add("animate-spin");
+        quickSyncLabel.textContent = "Syncing...";
+      } else {
+        quickSyncSpinner.classList.remove("animate-spin");
+        quickSyncLabel.textContent = "Sync Now";
+      }
+    }
+
+    function triggerAutoSync() {
+      if (!isAutoSyncEnabled()) return;
+      const blobId = getSyncBlobId();
+      const syncKey = getSyncKey();
+      if (!blobId && !syncKey) return;
+
+      if (autoSyncPushTimeout) clearTimeout(autoSyncPushTimeout);
+      autoSyncPushTimeout = setTimeout(() => {
+        pushToCloud(true);
+      }, 1000);
+    }
+
+    let liveEventSource = null;
+
+    function initRealtimeListener() {
+      if (liveEventSource) {
+        try { liveEventSource.close(); } catch(e) {}
+        liveEventSource = null;
+      }
+      const topic = getActiveSyncTopic();
+      try {
+        liveEventSource = new EventSource(`https://ntfy.sh/${topic}/sse`);
+        liveEventSource.onopen = () => {
+          cloudSyncNavDot.className = "w-2 h-2 rounded-full bg-emerald-400 animate-pulse";
+          cloudSyncNavText.textContent = "Live: Real-Time Active";
+          modalSyncIndicator.className = "w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse";
+          modalSyncStatusLabel.textContent = "Real-Time Live Sync Active";
+        };
+        liveEventSource.onmessage = async (event) => {
+          try {
+            const msg = JSON.parse(event.data);
+            if (msg.event === "message" && msg.message) {
+              let parsed = null;
+              if (msg.attachment && msg.attachment.url) {
+                const res = await fetch(msg.attachment.url);
+                parsed = await res.json();
+              } else {
+                parsed = JSON.parse(msg.message);
+              }
+              if (parsed && parsed.updatedAt && parsed.deviceId !== getDeviceId()) {
+                applyFullDatabaseSnapshot(parsed, "Realtime SSE");
+                showToast("Live update received from Counter!");
+              }
+            }
+          } catch(err) {
+            console.warn("Realtime parse warning:", err);
+          }
+        };
+        liveEventSource.onerror = () => {
+          // EventSource auto-reconnects
+        };
+      } catch(e) {
+        console.warn("EventSource not initialized:", e);
+      }
+    }
+
+    async function pushToCloud(silent = false) {
+      if (isSyncInProgress) return;
+      isSyncInProgress = true;
+      setSyncSpinning(true);
+      const snapshot = getFullDatabaseSnapshot();
+      const payloadStr = JSON.stringify(snapshot);
+      const topic = getActiveSyncTopic();
+
+      let success = false;
+      try {
+        let res;
+        if (payloadStr.length < 3900) {
+          res = await fetch(`https://ntfy.sh/${topic}`, {
+            method: "POST",
+            headers: {
+              "Title": "Store Update",
+              "Priority": "high"
+            },
+            body: payloadStr
+          });
+        } else {
+          res = await fetch(`https://ntfy.sh/${topic}`, {
+            method: "PUT",
+            headers: { "Filename": "data.json" },
+            body: payloadStr
+          });
+        }
+        if (res.ok) success = true;
+      } catch(e) {
+        console.warn("Broadcast warning:", e);
+      }
+
+      setLastSyncTime(Date.now());
+      if (success) {
+        if (!silent) showToast("Live Sync: Update sent to all devices!");
+      }
+
+      isSyncInProgress = false;
+      setSyncSpinning(false);
+      updateSyncStatusUI();
+    }
+
+    async function pullFromCloud(silent = false) {
+      if (isSyncInProgress) return;
+      isSyncInProgress = true;
+      setSyncSpinning(true);
+      const topic = getActiveSyncTopic();
+
+      try {
+        const res = await fetch(`https://ntfy.sh/${topic}/json?poll=1&since=all`);
+        if (res.ok) {
+          const text = await res.text();
+          const lines = text.trim().split("\n");
+          let latest = null;
+          let maxTs = 0;
+          for (const line of lines) {
+            if (!line.trim()) continue;
+            try {
+              const msg = JSON.parse(line);
+              if (msg.event === "message" && msg.message) {
+                let parsed = null;
+                if (msg.attachment && msg.attachment.url) {
+                  const aRes = await fetch(msg.attachment.url);
+                  parsed = await aRes.json();
+                } else {
+                  parsed = JSON.parse(msg.message);
+                }
+                if (parsed && parsed.updatedAt && parsed.updatedAt > maxTs) {
+                  maxTs = parsed.updatedAt;
+                  latest = parsed;
+                }
+              }
+            } catch(e) {}
+          }
+          if (latest) {
+            // Apply latest update without blocking deviceId
+            applyFullDatabaseSnapshot(latest, "Realtime Poll");
+            if (!silent) showToast("Live Sync: Data refreshed from cloud!");
+          }
+        }
+      } catch(e) {
+        console.warn("Pull warning:", e);
+      } finally {
+        isSyncInProgress = false;
+        setSyncSpinning(false);
+        updateSyncStatusUI();
+      }
+    }
+
+    function getMobileSyncUrl() {
+      const blobId = getSyncBlobId();
+      const syncKey = getSyncKey() || blobId || "STORE";
+      const baseUrl = window.location.href.split("#")[0];
+      return `${baseUrl}#syncKey=${encodeURIComponent(syncKey)}&blobId=${encodeURIComponent(blobId)}`;
+    }
+
+    function getCompactOfflineDataCode() {
+      const snapshot = getFullDatabaseSnapshot();
+      try {
+        return btoa(unescape(encodeURIComponent(JSON.stringify(snapshot))));
+      } catch(e) {
+        return JSON.stringify(snapshot);
+      }
+    }
+
+    function loadFromOfflineDataCode(codeStr) {
+      if (!codeStr || !codeStr.trim()) return false;
+      try {
+        let clean = codeStr.trim();
+        // Extract from markdown or multiline text if copied with message
+        const match = clean.match(/```([A-Za-z0-9+/=]+)```/);
+        if (match && match[1]) clean = match[1];
+
+        let jsonStr = "";
+        try {
+          jsonStr = decodeURIComponent(escape(atob(clean)));
+        } catch(e) {
+          jsonStr = clean;
+        }
+        const parsed = JSON.parse(jsonStr);
+        if (applyFullDatabaseSnapshot(parsed, "Offline Code")) {
+          showToast("Data restored successfully from sync code!");
+          return true;
+        }
+      } catch(err) {
+        showToast("Invalid sync code format.");
+      }
+      return false;
+    }
+
+    function renderQrCode() {
+      if (!syncQrcodeContainer) return;
+      syncQrcodeContainer.innerHTML = "";
+      const isHosted = window.location.protocol === "http:" || window.location.protocol === "https:";
+      const isSrcdoc = window.location.href.includes("srcdoc") || window.location.origin === "null";
+
+      if (isHosted && !isSrcdoc) {
+        const url = getMobileSyncUrl();
+        if (typeof QRCode !== "undefined") {
+          try {
+            new QRCode(syncQrcodeContainer, {
+              text: url,
+              width: 140,
+              height: 140,
+              colorDark: "#0f172a",
+              colorLight: "#ffffff",
+              correctLevel: QRCode.CorrectLevel.M
+            });
+            return;
+          } catch(e) {}
+        }
+        syncQrcodeContainer.innerHTML = `<div class="p-3 bg-slate-100 rounded-xl text-xs text-slate-600 font-mono break-all">${url}</div>`;
+      } else {
+        syncQrcodeContainer.innerHTML = `
+          <div class="p-3 rounded-xl bg-amber-50 border border-amber-200 text-left text-xs text-amber-900 space-y-1.5 max-w-sm mx-auto">
+            <div class="font-bold flex items-center gap-1 text-amber-800">
+              <svg class="w-4 h-4 text-amber-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+              </svg>
+              <span>Local Offline / Preview Mode</span>
+            </div>
+            <p class="text-[11px] text-amber-700 leading-normal">
+              App computer ke local file/preview me chal raha hai, iska koi public internet web address nahi hai. Isliye phone camera QR se direct open nahi kar sakta.
+            </p>
+            <p class="text-[11px] font-semibold text-emerald-800">
+              👉 Upar <strong>Step 1</strong> se app file WhatsApp par bhein aur <strong>Step 2</strong> se sync code paste karein!
+            </p>
+          </div>
+        `;
+      }
+    }
+
+    function updateSyncStatusUI() {
+      const blobId = getSyncBlobId();
+      const syncKey = getSyncKey();
+      const connected = !!(blobId || syncKey);
+      const lastTs = getLastSyncTime();
+
+      let timeText = "Never";
+      if (lastTs > 0) {
+        const diffSec = Math.floor((Date.now() - lastTs) / 1000);
+        if (diffSec < 5) timeText = "Just now";
+        else if (diffSec < 60) timeText = `${diffSec}s ago`;
+        else timeText = `${Math.floor(diffSec / 60)}m ago`;
+      }
+
+      if (connected) {
+        cloudSyncNavDot.className = "w-2 h-2 rounded-full bg-emerald-400 animate-pulse";
+        cloudSyncNavText.textContent = `Sync: ${syncKey || "Active"}`;
+        modalSyncIndicator.className = "w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse";
+        modalSyncStatusLabel.textContent = "Cloud Sync Active (Live Connected)";
+        modalSyncIdDisplay.textContent = getActiveSyncTopic();
+        disconnectCloudBtn.classList.remove("hidden");
+      } else {
+        cloudSyncNavDot.className = "w-2 h-2 rounded-full bg-slate-400";
+        cloudSyncNavText.textContent = "Connect Mobile";
+        modalSyncIndicator.className = "w-2.5 h-2.5 rounded-full bg-slate-400";
+        modalSyncStatusLabel.textContent = "Local Storage (Not Connected)";
+        modalSyncIdDisplay.textContent = "NOT_CONNECTED";
+        disconnectCloudBtn.classList.add("hidden");
+      }
+
+      modalLastSyncTime.textContent = `Last Synced: ${timeText}`;
+      if (cloudSyncKeyInput && syncKey) {
+        cloudSyncKeyInput.value = syncKey;
+      }
+      autoSyncToggle.checked = isAutoSyncEnabled();
+    }
+
+    function openSyncModal() {
+      updateSyncStatusUI();
+      renderQrCode();
+      cloudSyncModal.classList.remove("hidden");
+    }
+
+    function closeSyncModal() {
+      cloudSyncModal.classList.add("hidden");
+    }
+
+    cloudSyncNavBtn.addEventListener("click", openSyncModal);
+    openCloudSyncBtn.addEventListener("click", openSyncModal);
+    loginCloudSyncBtn.addEventListener("click", openSyncModal);
+    closeCloudSyncModalBtn.addEventListener("click", closeSyncModal);
+
+    quickSyncBtn.addEventListener("click", () => {
+      const blobId = getSyncBlobId();
+      if (blobId) {
+        pullFromCloud(false);
+      } else {
+        openSyncModal();
+      }
+    });
+
+    syncNowModalBtn.addEventListener("click", async () => {
+      let blobId = getSyncBlobId();
+      if (!blobId) {
+        const inputKey = cloudSyncKeyInput.value.trim() || getStoreName();
+        setSyncKey(inputKey);
+        await pushToCloud(false);
+      } else {
+        await pullFromCloud(false);
+        await pushToCloud(true);
+      }
+      renderQrCode();
+    });
+
+    connectCloudBtn.addEventListener("click", async () => {
+      const inputVal = cloudSyncKeyInput.value.trim();
+      if (!inputVal) {
+        showToast("Please enter a Secret Sync Key or phone number.");
+        return;
+      }
+      setSyncKey(inputVal);
+      if (/^[a-zA-Z0-9_-]{12,}$/.test(inputVal)) {
+        setSyncBlobId(inputVal);
+        await pullFromCloud(false);
+      } else {
+        await pushToCloud(false);
+      }
+      renderQrCode();
+      showToast("Connected to Cloud Sync channel: " + inputVal);
+    });
+
+    disconnectCloudBtn.addEventListener("click", () => {
+      setSyncKey("");
+      setSyncBlobId("");
+      cloudSyncKeyInput.value = "";
+      updateSyncStatusUI();
+      renderQrCode();
+      showToast("Disconnected from cloud sync. Data saved locally.");
+    });
+
+    downloadAppFileBtn.addEventListener("click", () => {
+      const storeName = getStoreName().replace(/\s+/g, '_');
+      const htmlContent = "<!DOCTYPE html>\n" + document.documentElement.outerHTML;
+      const blob = new Blob([htmlContent], { type: "text/html;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${storeName}_App.html`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      showToast("App HTML file download ho gayi! Is file ko WhatsApp se phone par bhein.");
+    });
+
+    shareWhatsappBtn.addEventListener("click", () => {
+      const code = getCompactOfflineDataCode();
+      const storeName = getStoreName();
+      const text = `🏥 *${storeName} - Pharmacy Data Sync Code*\n\nNeeche diya gaya sync code copy karein aur apne mobile ke app me paste karein:\n\n\`\`\`${code}\`\`\`\n\n👉 *Mobile me kaise use karein:*\n1. Mobile par app open karein.\n2. 'Sync' me ja kar '1-Tap Paste & Load' dabayein!\n(Aapka sara staff, shift timings aur hisab turant load ho jayega!)`;
+      const waUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`;
+      window.open(waUrl, "_blank");
+      showToast("WhatsApp khul raha hai data bhejne ke liye!");
+    });
+
+    copyMobileLinkBtn.addEventListener("click", () => {
+      const url = getMobileSyncUrl();
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(url).then(() => showToast("Mobile link copied to clipboard!")).catch(() => copyFallback(url));
+      } else {
+        copyFallback(url);
+      }
+    });
+
+    function copyFallback(text) {
+      const textarea = document.createElement("textarea");
+      textarea.value = text;
+      document.body.appendChild(textarea);
+      textarea.select();
+      try {
+        document.execCommand("copy");
+        showToast("Copied to clipboard!");
+      } catch(e) {
+        showToast("Unable to copy automatically.");
+      }
+      document.body.removeChild(textarea);
+    }
+
+    copySyncCodeBtn.addEventListener("click", () => {
+      const code = getCompactOfflineDataCode();
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(code).then(() => showToast("Sync Code copied! WhatsApp par paste karein.")).catch(() => copyFallback(code));
+      } else {
+        copyFallback(code);
+      }
+    });
+
+    loadSyncCodeBtn.addEventListener("click", () => {
+      const val = pasteSyncCodeInput.value.trim();
+      if (!val) {
+        showToast("Please paste the sync code first.");
+        return;
+      }
+      if (loadFromOfflineDataCode(val)) {
+        pasteSyncCodeInput.value = "";
+        closeSyncModal();
+      }
+    });
+
+    pasteClipboardSyncBtn.addEventListener("click", async () => {
+      try {
+        if (navigator.clipboard && navigator.clipboard.readText) {
+          const text = await navigator.clipboard.readText();
+          if (text && text.trim()) {
+            if (loadFromOfflineDataCode(text)) {
+              pasteSyncCodeInput.value = "";
+              closeSyncModal();
+              return;
+            }
+          }
+        }
+      } catch(err) {
+        console.warn("Clipboard read blocked:", err);
+      }
+      showToast("Clipboard access allow karein ya box me paste karke 'Load Data' dabayein.");
+      pasteSyncCodeInput.focus();
+    });
+
+    autoSyncToggle.addEventListener("change", (e) => {
+      setAutoSyncEnabled(e.target.checked);
+      showToast(e.target.checked ? "Auto-sync enabled (every 8s)" : "Auto-sync paused");
+    });
+
+    function checkUrlHashOnBoot() {
+      try {
+        const hash = window.location.hash;
+        if (!hash) return;
+        const params = new URLSearchParams(hash.replace(/^#/, ""));
+        const hashBlobId = params.get("blobId");
+        const hashSyncKey = params.get("syncKey");
+        const hashData = params.get("data");
+
+        if (hashBlobId && hashBlobId !== "null" && hashBlobId !== "") {
+          setSyncBlobId(hashBlobId);
+          if (hashSyncKey) setSyncKey(hashSyncKey);
+          showToast("Sync Key detected! Connecting to cloud sync...");
+          pullFromCloud(false);
+        } else if (hashSyncKey) {
+          setSyncKey(hashSyncKey);
+        }
+
+        if (hashData) {
+          loadFromOfflineDataCode(hashData);
+        }
+      } catch(e) {
+        console.warn("Hash boot check error:", e);
+      }
+    }
+
+    // Auto-pull loop every 8 seconds
+    // Fast 2-second background poll for rock-solid live synchronization
+    setInterval(() => {
+      if (isAutoSyncEnabled()) {
+        pullFromCloud(true);
+      }
+    }, 2000);
+
+    window.addEventListener("focus", () => {
+      if (getSyncBlobId() || getSyncKey()) {
+        pullFromCloud(true);
+      }
+    });
+
+    if (!getSyncKey()) {
+      setSyncKey("LUCKNOW_PHARMACY_LIVE");
+    }
+    checkUrlHashOnBoot();
+    updateSyncStatusUI();
+    initRealtimeListener();
+    // Auto pull from cloud immediately on load// Auto pull from cloud immediately on load so mobile gets PC data right away
+    pullFromCloud(true);
+
+    // Initial App Boot
+    
+    const refreshEmpTasksBtn = document.getElementById("refresh-emp-tasks-btn");
+    if (refreshEmpTasksBtn) {
+      refreshEmpTasksBtn.addEventListener("click", async () => {
+        showToast("Checking for new tasks from Owner...");
+        await pullFromCloud(false);
+        if (currentSession.role === "employee" && currentSession.empId) {
+          const currentEmp = employees.find(e => Number(e.id) === Number(currentSession.empId));
+          if (currentEmp) renderEmployeeTasks(currentEmp);
+        }
+      });
+    }
+
+    
+    const headerQuickSyncBtn = document.getElementById("header-quick-sync-btn");
+    const headerSyncIcon = document.getElementById("header-sync-icon");
+    const headerSyncLabel = document.getElementById("header-sync-label");
+    if (headerQuickSyncBtn) {
+      headerQuickSyncBtn.addEventListener("click", async () => {
+        if (headerSyncIcon) headerSyncIcon.classList.add("animate-spin");
+        if (headerSyncLabel) headerSyncLabel.textContent = "Syncing...";
+        showToast("Fetching live duty status from Counter PC...");
+        await pullFromCloud(false);
+        if (headerSyncIcon) headerSyncIcon.classList.remove("animate-spin");
+        if (headerSyncLabel) headerSyncLabel.textContent = "⚡ Sync PC Live";
+      });
+    }
+
+    updatePortalUI();
+  </script>
+</body>
+</html>
