@@ -668,6 +668,12 @@
               <p class="text-xs text-slate-500">Store tasks assigned by owner</p>
             </div>
             <span id="emp-tasks-badge" class="px-2.5 py-0.5 rounded-full bg-indigo-50 text-indigo-700 text-xs font-bold border border-indigo-100">0 Tasks</span>
+              <button type="button" id="refresh-emp-tasks-btn" class="px-2 py-0.5 rounded-md bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-semibold border border-indigo-200 transition flex items-center gap-1 shadow-sm" title="Check for new tasks">
+                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                </svg>
+                <span>Refresh</span>
+              </button>
           </div>
 
           <div id="emp-tasks-list" class="space-y-2.5">
@@ -1589,6 +1595,16 @@
       return "₹" + Number(num || 0).toLocaleString("en-IN");
     }
 
+    function getEmpWorkedSeconds(emp) {
+      if (!emp) return 0;
+      let base = emp.accumulatedSeconds || emp.workedSeconds || 0;
+      if (emp.isClockedIn && emp.clockInTimestamp) {
+        const elapsed = Math.max(0, Math.floor((Date.now() - emp.clockInTimestamp) / 1000));
+        return base + elapsed;
+      }
+      return base;
+    }
+
     function formatSeconds(secs) {
       const s = Math.max(0, Math.floor(secs || 0));
       const h = Math.floor(s / 3600);
@@ -1677,7 +1693,7 @@
         changeOwnerPinNavBtn.classList.add("hidden");
         editPharmacyNavBtn.classList.add("hidden");
         if (liveMonitorInterval) clearInterval(liveMonitorInterval);
-        const emp = employees.find(e => e.id === currentSession.empId);
+        const emp = employees.find(e => Number(e.id) === Number(currentSession.empId));
         if (!emp) {
           currentSession = { role: null, empId: null };
           updatePortalUI();
@@ -1750,6 +1766,8 @@
 
         employees.forEach(emp => {
           const isWorking = emp.isClockedIn;
+          const currentWorked = getEmpWorkedSeconds(emp);
+          emp.workedSeconds = currentWorked;
           let statusBadge = "";
           let cardBg = "bg-slate-800/80 border-slate-700";
 
@@ -1758,7 +1776,7 @@
             cardBg = "bg-emerald-950/40 border-emerald-800/60";
           } else if (emp.status === "On Leave") {
             statusBadge = `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">🏖️ On Leave</span>`;
-          } else if (emp.workedSeconds && emp.workedSeconds > 0) {
+          } else if (currentWorked > 0) {
             statusBadge = `<span class="px-2 py-0.5 rounded-full text-[10px] font-medium bg-slate-700 text-slate-300">⏹ Completed</span>`;
           } else {
             statusBadge = `<span class="px-2 py-0.5 rounded-full text-[10px] font-medium bg-slate-800 text-slate-400">Not Clocked In</span>`;
@@ -1776,7 +1794,7 @@
             </div>
             <div class="text-right space-y-1">
               <div>${statusBadge}</div>
-              <div class="font-mono text-xs font-bold ${isWorking ? 'text-emerald-400' : 'text-slate-400'}">${formatSeconds(emp.workedSeconds)}</div>
+              <div class="font-mono text-xs font-bold ${isWorking ? 'text-emerald-400' : 'text-slate-400'}">${formatSeconds(currentWorked)}</div>
             </div>
           `;
           liveStaffMonitorGrid.appendChild(card);
@@ -1825,7 +1843,8 @@
         tr.className = "hover:bg-slate-50 transition";
         
         const isWorkingNow = emp.isClockedIn;
-        const totalWorked = emp.workedSeconds || 0;
+        const totalWorked = getEmpWorkedSeconds(emp);
+        emp.workedSeconds = totalWorked;
         const timerPill = isWorkingNow
           ? `<span class="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full animate-pulse">● Active (${formatSeconds(totalWorked)})</span>`
           : `<span class="text-xs text-slate-500 font-mono">${formatSeconds(totalWorked)}</span>`;
@@ -2243,20 +2262,21 @@
         empOvertimeBadge.classList.add("hidden");
       }
 
-      empLiveTimer.textContent = formatSeconds(emp.workedSeconds);
+      const currentWorked = getEmpWorkedSeconds(emp);
+      emp.workedSeconds = currentWorked;
+      empLiveTimer.textContent = formatSeconds(currentWorked);
 
       if (emp.isClockedIn) {
         timerInterval = setInterval(() => {
-          emp.workedSeconds = (emp.workedSeconds || 0) + 1;
-          empLiveTimer.textContent = formatSeconds(emp.workedSeconds);
+          const liveSecs = getEmpWorkedSeconds(emp);
+          emp.workedSeconds = liveSecs;
+          empLiveTimer.textContent = formatSeconds(liveSecs);
 
-          if (emp.workedSeconds > 28800) {
-            const extraSeconds = emp.workedSeconds - 28800;
+          if (liveSecs > 28800) {
+            const extraSeconds = liveSecs - 28800;
             emp.overtimeHours = Number((extraSeconds / 3600).toFixed(1));
             empOvertimeBadge.classList.remove("hidden");
           }
-
-          if (emp.workedSeconds % 10 === 0) saveEmployees();
         }, 1000);
       }
 
@@ -2325,7 +2345,7 @@
       const type = leaveTypeSelect.value;
       const reason = leaveReasonInput.value.trim();
 
-      const emp = employees.find(e => e.id === currentSession.empId);
+      const emp = employees.find(e => Number(e.id) === Number(currentSession.empId));
       if (emp && date && reason) {
         if (!emp.leaves) emp.leaves = [];
         emp.leaves.push({
@@ -2343,12 +2363,14 @@
       }
     });
 
-    empStartWorkBtn.addEventListener("click", () => {
-      const emp = employees.find(e => e.id === currentSession.empId);
+    empStartWorkBtn.addEventListener("click", async () => {
+      const emp = employees.find(e => Number(e.id) === Number(currentSession.empId));
       if (!emp) return;
 
       emp.isClockedIn = true;
       emp.status = "Present";
+      emp.clockInTimestamp = Date.now();
+      emp.accumulatedSeconds = emp.accumulatedSeconds || emp.workedSeconds || 0;
 
       const now = new Date();
       emp.clockInTime = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
@@ -2358,34 +2380,54 @@
       emp.lateMinutes = lateCheck.lateMinutes;
 
       saveEmployees();
+      renderEmployeePortal(emp);
 
       if (emp.isLate) {
-        showToast(`Notice: You clocked in ${emp.lateMinutes} minutes past your scheduled shift.`);
+        showToast(`Notice: Clocked in ${emp.lateMinutes} mins late.`);
       } else {
-        showToast("Attendance logged on time! Shift timer active.");
+        showToast("Shift started on time! Live sync active.");
       }
 
-      renderEmployeePortal(emp);
+      await pushToCloud(false);
     });
 
-    empPauseWorkBtn.addEventListener("click", () => {
-      const emp = employees.find(e => e.id === currentSession.empId);
+    empPauseWorkBtn.addEventListener("click", async () => {
+      const emp = employees.find(e => Number(e.id) === Number(currentSession.empId));
       if (!emp) return;
+
+      if (emp.clockInTimestamp) {
+        const elapsed = Math.max(0, Math.floor((Date.now() - emp.clockInTimestamp) / 1000));
+        emp.accumulatedSeconds = (emp.accumulatedSeconds || 0) + elapsed;
+      }
+      emp.workedSeconds = emp.accumulatedSeconds;
       emp.isClockedIn = false;
+      emp.clockInTimestamp = null;
+
       saveEmployees();
-      showToast("Duty timer paused for break.");
       renderEmployeePortal(emp);
+      showToast("Duty timer paused for break.");
+
+      await pushToCloud(false);
     });
 
-    empStopWorkBtn.addEventListener("click", () => {
-      const emp = employees.find(e => e.id === currentSession.empId);
+    empStopWorkBtn.addEventListener("click", async () => {
+      const emp = employees.find(e => Number(e.id) === Number(currentSession.empId));
       if (!emp) return;
-      
+
+      if (emp.clockInTimestamp) {
+        const elapsed = Math.max(0, Math.floor((Date.now() - emp.clockInTimestamp) / 1000));
+        emp.accumulatedSeconds = (emp.accumulatedSeconds || 0) + elapsed;
+      }
+      emp.workedSeconds = emp.accumulatedSeconds;
       emp.isClockedIn = false;
+      emp.clockInTimestamp = null;
+
       saveEmployees();
 
       const timeWorked = formatSeconds(emp.workedSeconds);
       showToast(`Shift completed! Total logged time: ${timeWorked}. Logging out...`);
+
+      await pushToCloud(false);
 
       setTimeout(() => {
         setSession({ role: null, empId: null });
@@ -2770,7 +2812,7 @@
     closeOtModalBtn.addEventListener("click", closeOtModal);
     cancelOtBtn.addEventListener("click", closeOtModal);
 
-    assignTaskForm.addEventListener("submit", (e) => {
+    assignTaskForm.addEventListener("submit", async (e) => {
       e.preventDefault();
       const desc = taskDescInput.value.trim();
       if (selectedEmployeeForTask && desc) {
@@ -2782,7 +2824,14 @@
         });
         saveEmployees();
         renderTable(searchInput.value);
-        showToast(`Task assigned to ${selectedEmployeeForTask.name}!`);
+        taskModal.classList.add("hidden");
+        const assignedName = selectedEmployeeForTask.name;
+        selectedEmployeeForTask = null;
+        showToast(`Task assigned! Sending live to ${assignedName}'s phone...`);
+        // Force immediate cloud broadcast
+        await pushToCloud(false);
+        showToast(`Task delivered to ${assignedName}'s mobile!`);
+        return;
       }
       taskModal.classList.add("hidden");
       selectedEmployeeForTask = null;
@@ -3034,11 +3083,15 @@
 
     function getActiveSyncTopic() {
       const custom = getSyncKey();
-      if (custom && custom.trim().length > 0) {
-        return "pharma_live_" + custom.trim().toLowerCase().replace(/[^a-z0-9_-]/g, "_");
+      if (custom && custom.trim().length > 0 && custom !== "LUCKNOW_PHARMACY_LIVE") {
+        return "pharma_" + custom.trim().toLowerCase().replace(/[^a-z0-9_-]/g, "_");
       }
-      const store = getStoreName().toLowerCase().replace(/[^a-z0-9_-]/g, "_");
-      return "pharma_live_" + (store || "lucknow_medicos_786");
+      // Auto-derive from GitHub Pages URL domain & repository path so PC and Mobile automatically share the exact same room
+      if (window.location.hostname && window.location.hostname !== "localhost" && window.location.hostname !== "127.0.0.1") {
+        const hostPart = (window.location.hostname + window.location.pathname).toLowerCase().replace(/[^a-z0-9]/g, '_');
+        return "pharma_hub_" + hostPart.slice(0, 45);
+      }
+      return "pharma_live_lucknow_medicos_786";
     }
 
     function getFullDatabaseSnapshot() {
@@ -3571,6 +3624,19 @@
     pullFromCloud(true);
 
     // Initial App Boot
+    
+    const refreshEmpTasksBtn = document.getElementById("refresh-emp-tasks-btn");
+    if (refreshEmpTasksBtn) {
+      refreshEmpTasksBtn.addEventListener("click", async () => {
+        showToast("Checking for new tasks from Owner...");
+        await pullFromCloud(false);
+        if (currentSession.role === "employee" && currentSession.empId) {
+          const currentEmp = employees.find(e => Number(e.id) === Number(currentSession.empId));
+          if (currentEmp) renderEmployeeTasks(currentEmp);
+        }
+      });
+    }
+
     updatePortalUI();
   </script>
 </body>
