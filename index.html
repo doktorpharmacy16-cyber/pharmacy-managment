@@ -207,6 +207,12 @@
 
         <!-- Quick Metrics Counters -->
         <div class="flex items-center gap-2.5 flex-wrap">
+          <button type="button" id="header-quick-sync-btn" class="px-3 py-1.5 rounded-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs transition flex items-center gap-1.5 shadow-sm no-print" title="Live Refresh Counter PC Status">
+            <svg class="w-3.5 h-3.5" id="header-sync-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+            </svg>
+            <span id="header-sync-label">⚡ Sync PC Live</span>
+          </button>
           <div class="inline-flex items-center px-3 py-1.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs sm:text-sm font-semibold">
             Present: <span id="present-count" class="ml-1.5 font-bold">0</span>
           </div>
@@ -3084,14 +3090,9 @@
     function getActiveSyncTopic() {
       const custom = getSyncKey();
       if (custom && custom.trim().length > 0 && custom !== "LUCKNOW_PHARMACY_LIVE") {
-        return "pharma_" + custom.trim().toLowerCase().replace(/[^a-z0-9_-]/g, "_");
+        return "pharma_rx_" + custom.trim().toLowerCase().replace(/[^a-z0-9_-]/g, "_");
       }
-      // Auto-derive from GitHub Pages URL domain & repository path so PC and Mobile automatically share the exact same room
-      if (window.location.hostname && window.location.hostname !== "localhost" && window.location.hostname !== "127.0.0.1") {
-        const hostPart = (window.location.hostname + window.location.pathname).toLowerCase().replace(/[^a-z0-9]/g, '_');
-        return "pharma_hub_" + hostPart.slice(0, 45);
-      }
-      return "pharma_live_lucknow_medicos_786";
+      return "pharma_lucknow_counter_live_786";
     }
 
     function getFullDatabaseSnapshot() {
@@ -3271,10 +3272,14 @@
           let latest = null;
           let maxTs = 0;
           for (const line of lines) {
+            if (!line.trim()) continue;
             try {
               const msg = JSON.parse(line);
               if (msg.event === "message" && msg.message) {
-                const parsed = JSON.parse(msg.message);
+                let parsed = null;
+                try {
+                  parsed = JSON.parse(msg.message);
+                } catch(pe) {}
                 if (parsed && parsed.updatedAt && parsed.updatedAt > maxTs) {
                   maxTs = parsed.updatedAt;
                   latest = parsed;
@@ -3283,11 +3288,8 @@
             } catch(e) {}
           }
           if (latest && latest.deviceId !== getDeviceId()) {
-            const localTs = getLastSyncTime();
-            if (latest.updatedAt > localTs || employees.length === 0) {
-              applyFullDatabaseSnapshot(latest, "Realtime Poll");
-              if (!silent) showToast("Latest data synchronized from live cloud!");
-            }
+            applyFullDatabaseSnapshot(latest, "Realtime Poll");
+            if (!silent) showToast("Live Sync: Latest data refreshed from Counter PC!");
           }
         }
       } catch(e) {
@@ -3634,6 +3636,21 @@
           const currentEmp = employees.find(e => Number(e.id) === Number(currentSession.empId));
           if (currentEmp) renderEmployeeTasks(currentEmp);
         }
+      });
+    }
+
+    
+    const headerQuickSyncBtn = document.getElementById("header-quick-sync-btn");
+    const headerSyncIcon = document.getElementById("header-sync-icon");
+    const headerSyncLabel = document.getElementById("header-sync-label");
+    if (headerQuickSyncBtn) {
+      headerQuickSyncBtn.addEventListener("click", async () => {
+        if (headerSyncIcon) headerSyncIcon.classList.add("animate-spin");
+        if (headerSyncLabel) headerSyncLabel.textContent = "Syncing...";
+        showToast("Fetching live duty status from Counter PC...");
+        await pullFromCloud(false);
+        if (headerSyncIcon) headerSyncIcon.classList.remove("animate-spin");
+        if (headerSyncLabel) headerSyncLabel.textContent = "⚡ Sync PC Live";
       });
     }
 
