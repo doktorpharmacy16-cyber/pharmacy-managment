@@ -1782,8 +1782,12 @@
             cardBg = "bg-emerald-950/40 border-emerald-800/60";
           } else if (emp.status === "On Leave") {
             statusBadge = `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">🏖️ On Leave</span>`;
+          } else if (emp.isShiftCompleted) {
+            statusBadge = `<span class="px-2 py-0.5 rounded-full text-[10px] font-medium bg-slate-700 text-slate-300 border border-slate-600">⏹️ Shift Finished</span>`;
+            cardBg = "bg-slate-800/80 border-slate-700";
           } else if (currentWorked > 0) {
-            statusBadge = `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">⏸️ Paused (Break)</span>`;
+            statusBadge = `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">⏸️ On Break (Paused)</span>`;
+            cardBg = "bg-amber-950/20 border-amber-800/40";
           } else {
             statusBadge = `<span class="px-2 py-0.5 rounded-full text-[10px] font-medium bg-slate-800 text-slate-400">Not Clocked In</span>`;
           }
@@ -2254,7 +2258,13 @@
         timerLiveBadge.classList.remove("hidden");
       } else {
         const hasWorked = (emp.accumulatedSeconds && emp.accumulatedSeconds > 0) || (emp.workedSeconds && emp.workedSeconds > 0);
-        empPortalStatus.textContent = hasWorked ? "⏸️ Shift Paused (Break)" : "Shift Not Started";
+        if (emp.isShiftCompleted) {
+          empPortalStatus.textContent = "⏹️ Duty Finished (Shift Complete)";
+          empPortalStatus.className = "text-lg font-bold text-slate-300";
+        } else {
+          empPortalStatus.textContent = hasWorked ? "⏸️ Shift Paused (Break)" : "Shift Not Started";
+          empPortalStatus.className = hasWorked ? "text-lg font-bold text-amber-300" : "text-lg font-bold text-white";
+        }
         empPortalStatus.className = hasWorked ? "text-lg font-bold text-amber-300" : "text-lg font-bold text-white";
         empStartWorkBtn.classList.remove("hidden");
         const startBtnSpan = empStartWorkBtn.querySelector("span");
@@ -2379,6 +2389,7 @@
       const isResuming = (emp.accumulatedSeconds && emp.accumulatedSeconds > 0) || (emp.workedSeconds && emp.workedSeconds > 0);
       emp.isClockedIn = true;
       emp.status = "Present";
+      emp.isShiftCompleted = false;
       emp.clockInTimestamp = Date.now();
       emp.accumulatedSeconds = emp.accumulatedSeconds || emp.workedSeconds || 0;
 
@@ -2417,6 +2428,7 @@
       emp.workedSeconds = emp.accumulatedSeconds || 0;
       emp.isClockedIn = false;
       emp.clockInTimestamp = null;
+      emp.isShiftCompleted = false; // explicitly paused, not finished
 
       saveEmployees();
       renderEmployeePortal(emp);
@@ -2433,14 +2445,15 @@
         const elapsed = Math.max(0, Math.floor((Date.now() - emp.clockInTimestamp) / 1000));
         emp.accumulatedSeconds = (emp.accumulatedSeconds || 0) + elapsed;
       }
-      emp.workedSeconds = emp.accumulatedSeconds;
+      emp.workedSeconds = emp.accumulatedSeconds || 0;
       emp.isClockedIn = false;
       emp.clockInTimestamp = null;
+      emp.isShiftCompleted = true; // Mark shift as explicitly completed, not paused
 
       saveEmployees();
 
       const timeWorked = formatSeconds(emp.workedSeconds);
-      showToast(`Shift completed! Total logged time: ${timeWorked}. Logging out...`);
+      showToast(`Duty finished! Total time: ${timeWorked}. Logging out...`);
 
       await pushToCloud(false);
 
@@ -2479,8 +2492,18 @@
     });
 
     switchAccountBtn.addEventListener("click", () => {
+      if (currentSession.role === "employee" && currentSession.empId) {
+        const currentEmp = employees.find(e => Number(e.id) === Number(currentSession.empId));
+        if (currentEmp && currentEmp.isClockedIn) {
+          // Employee is logging out of view while keeping duty clock ticking in background
+          showToast(`Logged out to portal screen. ${currentEmp.name}'s duty remains active.`);
+        } else {
+          showToast("Successfully logged out. Please choose a portal.");
+        }
+      } else {
+        showToast("Successfully logged out. Please choose a portal.");
+      }
       setSession({ role: null, empId: null });
-      showToast("Successfully logged out. Please choose a portal.");
     });
 
     function openPharmacyNameModal() {
