@@ -2257,21 +2257,27 @@
         empStopWorkBtn.classList.remove("hidden");
         timerLiveBadge.classList.remove("hidden");
       } else {
-        const hasWorked = (emp.accumulatedSeconds && emp.accumulatedSeconds > 0) || (emp.workedSeconds && emp.workedSeconds > 0);
+        if (timerInterval) clearInterval(timerInterval);
         if (emp.isShiftCompleted) {
           empPortalStatus.textContent = "⏹️ Duty Finished (Shift Complete)";
           empPortalStatus.className = "text-lg font-bold text-slate-300";
+          empStartWorkBtn.classList.remove("hidden");
+          const startBtnSpan = empStartWorkBtn.querySelector("span");
+          if (startBtnSpan) startBtnSpan.textContent = "Clock In (Start Work)";
+          empPauseWorkBtn.classList.add("hidden");
+          empStopWorkBtn.classList.add("hidden");
+          timerLiveBadge.classList.add("hidden");
         } else {
+          const hasWorked = (emp.accumulatedSeconds && emp.accumulatedSeconds > 0) || (emp.workedSeconds && emp.workedSeconds > 0);
           empPortalStatus.textContent = hasWorked ? "⏸️ Shift Paused (Break)" : "Shift Not Started";
           empPortalStatus.className = hasWorked ? "text-lg font-bold text-amber-300" : "text-lg font-bold text-white";
+          empStartWorkBtn.classList.remove("hidden");
+          const startBtnSpan = empStartWorkBtn.querySelector("span");
+          if (startBtnSpan) startBtnSpan.textContent = hasWorked ? "Resume Duty (Break Khatam)" : "Clock In (Start Work)";
+          empPauseWorkBtn.classList.add("hidden");
+          empStopWorkBtn.classList.remove("hidden");
+          timerLiveBadge.classList.add("hidden");
         }
-        empPortalStatus.className = hasWorked ? "text-lg font-bold text-amber-300" : "text-lg font-bold text-white";
-        empStartWorkBtn.classList.remove("hidden");
-        const startBtnSpan = empStartWorkBtn.querySelector("span");
-        if (startBtnSpan) startBtnSpan.textContent = hasWorked ? "Resume Duty (Break Khatam)" : "Clock In (Start Work)";
-        empPauseWorkBtn.classList.add("hidden");
-        empStopWorkBtn.classList.remove("hidden");
-        timerLiveBadge.classList.add("hidden");
       }
 
       const isOvertimeActive = (emp.workedSeconds || 0) >= 28800;
@@ -2491,18 +2497,30 @@
       }
     });
 
-    switchAccountBtn.addEventListener("click", () => {
+    switchAccountBtn.addEventListener("click", async () => {
+      // If currently an employee is logged in, cleanly finalize their duty
       if (currentSession.role === "employee" && currentSession.empId) {
+        if (timerInterval) clearInterval(timerInterval);
         const currentEmp = employees.find(e => Number(e.id) === Number(currentSession.empId));
-        if (currentEmp && currentEmp.isClockedIn) {
-          // Employee is logging out of view while keeping duty clock ticking in background
-          showToast(`Logged out to portal screen. ${currentEmp.name}'s duty remains active.`);
+        if (currentEmp) {
+          if (currentEmp.isClockedIn && currentEmp.clockInTimestamp) {
+            const elapsed = Math.max(0, Math.floor((Date.now() - currentEmp.clockInTimestamp) / 1000));
+            currentEmp.accumulatedSeconds = (currentEmp.accumulatedSeconds || 0) + elapsed;
+          }
+          currentEmp.workedSeconds = currentEmp.accumulatedSeconds || 0;
+          currentEmp.isClockedIn = false;
+          currentEmp.clockInTimestamp = null;
+          currentEmp.isShiftCompleted = true; // Duty is completely finished and logged out
+          saveEmployees();
+          await pushToCloud(false);
+          showToast(`Duty finished for ${currentEmp.name}! Total time: ${formatSeconds(currentEmp.workedSeconds)}. Logged out.`);
         } else {
-          showToast("Successfully logged out. Please choose a portal.");
+          showToast("Successfully logged out.");
         }
       } else {
         showToast("Successfully logged out. Please choose a portal.");
       }
+
       setSession({ role: null, empId: null });
     });
 
