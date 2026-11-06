@@ -1783,7 +1783,7 @@
           } else if (emp.status === "On Leave") {
             statusBadge = `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">🏖️ On Leave</span>`;
           } else if (currentWorked > 0) {
-            statusBadge = `<span class="px-2 py-0.5 rounded-full text-[10px] font-medium bg-slate-700 text-slate-300">⏹ Completed</span>`;
+            statusBadge = `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">⏸️ Paused (Break)</span>`;
           } else {
             statusBadge = `<span class="px-2 py-0.5 rounded-full text-[10px] font-medium bg-slate-800 text-slate-400">Not Clocked In</span>`;
           }
@@ -2253,11 +2253,14 @@
         empStopWorkBtn.classList.remove("hidden");
         timerLiveBadge.classList.remove("hidden");
       } else {
-        empPortalStatus.textContent = (emp.workedSeconds && emp.workedSeconds > 0) ? "Shift Paused / Completed" : "Shift Not Started";
-        empPortalStatus.className = "text-lg font-bold text-white";
+        const hasWorked = (emp.accumulatedSeconds && emp.accumulatedSeconds > 0) || (emp.workedSeconds && emp.workedSeconds > 0);
+        empPortalStatus.textContent = hasWorked ? "⏸️ Shift Paused (Break)" : "Shift Not Started";
+        empPortalStatus.className = hasWorked ? "text-lg font-bold text-amber-300" : "text-lg font-bold text-white";
         empStartWorkBtn.classList.remove("hidden");
+        const startBtnSpan = empStartWorkBtn.querySelector("span");
+        if (startBtnSpan) startBtnSpan.textContent = hasWorked ? "Resume Duty (Break Khatam)" : "Clock In (Start Work)";
         empPauseWorkBtn.classList.add("hidden");
-        empStopWorkBtn.classList.add("hidden");
+        empStopWorkBtn.classList.remove("hidden");
         timerLiveBadge.classList.add("hidden");
       }
 
@@ -2373,22 +2376,26 @@
       const emp = employees.find(e => Number(e.id) === Number(currentSession.empId));
       if (!emp) return;
 
+      const isResuming = (emp.accumulatedSeconds && emp.accumulatedSeconds > 0) || (emp.workedSeconds && emp.workedSeconds > 0);
       emp.isClockedIn = true;
       emp.status = "Present";
       emp.clockInTimestamp = Date.now();
       emp.accumulatedSeconds = emp.accumulatedSeconds || emp.workedSeconds || 0;
 
       const now = new Date();
-      emp.clockInTime = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-
-      const lateCheck = checkShiftLate(emp.shiftStartTime || "09:30");
-      emp.isLate = lateCheck.isLate;
-      emp.lateMinutes = lateCheck.lateMinutes;
+      if (!emp.clockInTime) {
+        emp.clockInTime = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        const lateCheck = checkShiftLate(emp.shiftStartTime || "09:30");
+        emp.isLate = lateCheck.isLate;
+        emp.lateMinutes = lateCheck.lateMinutes;
+      }
 
       saveEmployees();
       renderEmployeePortal(emp);
 
-      if (emp.isLate) {
+      if (isResuming) {
+        showToast("Break khatam! Duty resumed, live timer ticking...");
+      } else if (emp.isLate) {
         showToast(`Notice: Clocked in ${emp.lateMinutes} mins late.`);
       } else {
         showToast("Shift started on time! Live sync active.");
@@ -2401,17 +2408,19 @@
       const emp = employees.find(e => Number(e.id) === Number(currentSession.empId));
       if (!emp) return;
 
+      if (timerInterval) clearInterval(timerInterval);
+
       if (emp.clockInTimestamp) {
         const elapsed = Math.max(0, Math.floor((Date.now() - emp.clockInTimestamp) / 1000));
         emp.accumulatedSeconds = (emp.accumulatedSeconds || 0) + elapsed;
       }
-      emp.workedSeconds = emp.accumulatedSeconds;
+      emp.workedSeconds = emp.accumulatedSeconds || 0;
       emp.isClockedIn = false;
       emp.clockInTimestamp = null;
 
       saveEmployees();
       renderEmployeePortal(emp);
-      showToast("Duty timer paused for break.");
+      showToast("Duty timer paused for break. Syncing with PC...");
 
       await pushToCloud(false);
     });
